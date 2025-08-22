@@ -3,7 +3,7 @@ library(bayesRecon)
 library(tsibble)
 library(fable)
 library(dplyr)
-source("fable_reconcile.R")
+source("R/bayesRecon_BUIS.R")
 
 # debug(bayesRecon_BUIS)
 
@@ -35,4 +35,4 @@ fit %>%
   forecast(h = "3 years") |>
   accuracy(tourism_melb)
 
-fabletools:::reconcile_fbl_list
+# fabletools:::reconcile_fbl_list
