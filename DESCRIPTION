@@ -1,0 +1,37 @@
+Package: fable.bayesRecon
+Title: A fable wrapper for bayesRecon
+Version: 0.0.1
+Authors@R:
+    c(person(given = "Dario",
+             family = "Azzimonti",
+             role = c("aut","cre"),
+             email = "dario.azzimonti@gmail.com",
+             comment = c(ORCID = "0000-0001-5080-3061")),
+      person(given = "Lorenzo",
+             family = "Zambon",
+             role = c("aut"),
+             email = "lorenzo.zambon@idsia.ch",
+             comment = c(ORCID = "0000-0002-8939-993X")),
+      person(given = "Giorgio",
+             family = "Corani",
+             role = c("aut"),
+             email = "giorgio.corani@idsia.ch",
+             comment = c(ORCID = "0000-0002-1541-8384")))
+Description: A fable wrapper that implements the bayesRecon utilities in the fable framework. The reconciliation functions available in bayesRecon are implemented as a reconcile verb. 
+License: LGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    stats,
+    bayesRecon,
+    fabletools,
+    purrr,
+    vctrs,
+    distributional,
+    dplyr,
+    fable,
+    tsibble
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
