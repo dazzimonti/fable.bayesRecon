@@ -1,5 +1,6 @@
 test_that("This is a copy of the code used to debug, needs to become a test", {
   
+  # YOU NEED TO TEST THIS ON A HIERARCHY WITH MORE THAN ONE UPPER
   tourism_melb <- tsibble::tourism |>
     dplyr::filter(Region == "Melbourne") |> 
     fabletools::aggregate_key(Purpose, Trips = sum(Trips))

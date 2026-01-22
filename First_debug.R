@@ -3,6 +3,7 @@ library(bayesRecon)
 library(tsibble)
 library(fable)
 library(dplyr)
+devtools::load_all()
 source("R/bayesRecon_BUIS.R")
 
 # debug(bayesRecon_BUIS)

@@ -31,7 +31,7 @@ bayesRecon_BUIS <- function(models) {
 #' @import fable
 #' @import tsibble
 #' @import fabletools
-# @importFrom bayesRecon .check_weights .resample
+#' @importFrom bayesRecon .check_hierarchical
 #' 
 #' @method forecast lst_bayesRecon_BUIS 
 #' 
@@ -101,38 +101,71 @@ forecast.lst_bayesRecon_BUIS <- function(
     B <- do.call(cbind, B)
 
     # TODO: BUIS CURRENTLY IMPLEMENTED ONLY for hierarchies!
-    H <- A
-
-    # distributional:::density.dist_sample
-    # distributional:::density.dist_normal
-
-    for (hi in 1:nrow(H)) {
-      c = H[hi,]
-      b_mask = (c != 0)
-      # Compute weights by evaluating the upper densities
-      # distributional needs a numeric to apply density to many values
-      weights = stats::density(upper_fc, as.numeric(B %*% c))[[1L]]
-      # Make weights a matrix
-      weights <- matrix(weights, ncol = 1)
-
-      # Checks on weights are inherited from bayesRecon
-      check_weights.res = bayesRecon:::.check_weights(weights)
-      # TODO:  Ifs are commented, check if they work
-      # if (check_weights.res$warning & !suppress_warnings) {
-      #   warning_msg = check_weights.res$warning_msg
-      #   # add information to the warning message
-      #   upper_fromA_i = which(lapply(seq_len(nrow(A)), function(i) sum(abs(A[i,] - c))) == 0)
-      #   for (wmsg in warning_msg) {
-      #     wmsg = paste(wmsg, paste0("Check the upper forecast at index: ", upper_fromA_i,"."))
-      #     warning(wmsg)
-      #   }
-      # }
-      # if(check_weights.res$warning & (1 %in% check_weights.res$warning_code)){
-      #  next
-      # }
-      B[, b_mask] = bayesRecon:::.resample(B[, b_mask], weights)
+    # H, G
+    # browser()
+    is.hier = bayesRecon:::.check_hierarchical(A)
+    # browser()
+    if(is.hier){
+      H <- A
+      G <- NULL
+      upp_base_H = upper_fc
+      upp_base_G = NULL
+      in_typeH = NULL
+      distr_H  = NULL
+      in_typeG = NULL
+      distr_G  = NULL
+    }else{
+      get_HG.res = bayesRecon:::.get_HG(A, upper_fc, rep(0,n_upper),rep(0,n_upper))
+      H = get_HG.res$H
+      upp_base_H = get_HG.res$Hv
+      G = get_HG.res$G
+      upp_base_G = get_HG.res$Gv
+      in_typeH = NULL
+      distr_H  = NULL
+      in_typeG = NULL
+      distr_G  = NULL
     }
 
+    .comp_w_distributional <- function(b, u,    
+                                       in_type_ = NULL, 
+                                       distr_ = NULL){
+      return(stats::density(u, as.numeric(b))[[1L]])
+    }
+
+    B = bayesRecon:::.core_reconc_BUIS(A=A,H=H,G=G,B=B,
+                     upper_base_forecasts_H = upp_base_H,
+                    in_typeH = in_typeH, distr_H = distr_H,
+                    upper_base_forecasts_G = upp_base_G,
+                    in_typeG = in_typeG, distr_G = distr_G,
+                    .comp_w = .comp_w_distributional, 
+                    suppress_warnings = FALSE)
+
+    # for (hi in 1:nrow(H)) {
+    #   c = H[hi,]
+    #   b_mask = (c != 0)
+    #   # Compute weights by evaluating the upper densities
+    #   # distributional needs a numeric to apply density to many values
+    #   weights = stats::density(upper_fc[hi], as.numeric(B %*% c))[[1L]]
+    #   # Make weights a matrix
+    #   weights <- matrix(weights, ncol = 1)
+
+    #   # Checks on weights are inherited from bayesRecon
+    #   check_weights.res = bayesRecon:::.check_weights(weights)
+    #   # TODO:  Ifs are commented, check if they work
+    #   # if (check_weights.res$warning & !suppress_warnings) {
+    #   #   warning_msg = check_weights.res$warning_msg
+    #   #   # add information to the warning message
+    #   #   upper_fromA_i = which(lapply(seq_len(nrow(A)), function(i) sum(abs(A[i,] - c))) == 0)
+    #   #   for (wmsg in warning_msg) {
+    #   #     wmsg = paste(wmsg, paste0("Check the upper forecast at index: ", upper_fromA_i,"."))
+    #   #     warning(wmsg)
+    #   #   }
+    #   # }
+    #   # if(check_weights.res$warning & (1 %in% check_weights.res$warning_code)){
+    #   #  next
+    #   # }
+    #   B[, b_mask] = bayesRecon:::.resample(B[, b_mask], weights)
+    # }
     B = t(B)
     U = A %*% B
     Y_reconc = rbind(U, B)
