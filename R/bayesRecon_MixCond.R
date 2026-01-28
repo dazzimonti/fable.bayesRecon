@@ -86,6 +86,9 @@ forecast.lst_bayesRecon_MixCond <- function(
   # The next two lines do indexing magic to return base_forecasts in the proper order for bayesRecon
   btm_idx <- apply(S[btm_ts, , drop = FALSE], 1, \(x) which(as.logical(x)))
   base_forecast_h <- transpose_vec(fc_dist[c(upr_ts, btm_ts[btm_idx])])
+  
+  #S: btm_idx = 1 2 3 4
+  #S: base_forecasts[[1]] = N(1923, 10635) N(427, 3508)   N(594, 2549)   N(130, 1098)   N(700, 3411)
 
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
@@ -103,7 +106,8 @@ forecast.lst_bayesRecon_MixCond <- function(
     B <- bottom_fc |> distributional::generate(times = n_samples)
     # make B a matrix
     B <- do.call(cbind, B)
-
+    # sample from upper fc
+    
     U = B %*% t(A)
 
     # Compute sample covariance
@@ -117,9 +121,14 @@ forecast.lst_bayesRecon_MixCond <- function(
       res <- matrix(purrr::invoke(c, purrr::map(res, `[[`, 2)), ncol = length(object))
     }
 
+    #S: alternative: use res[,1:n_upper, drop=F] in schaferStrimmer_cov, but may give warning
+    if (n_upper == 1){
+      upper_covm <- matrix(crossprod(res[,1])/nrow(res))
+    } else {
     upper_covm <- bayesRecon::schaferStrimmer_cov(res[,1:n_upper])$shrink_cov
-
-
+    }
+    
+    #browser()
     mult_upper_fc <- distributional::dist_multivariate_normal(mu = list(sapply(upper_fc,mean)),
                                                               sigma = list(upper_covm))
 
@@ -136,13 +145,12 @@ forecast.lst_bayesRecon_MixCond <- function(
       warning_msg = check_weights.res$warning_msg
       warning(warning_msg)
     }
-    # browser()
     if(!(check_weights.res$warning & (1 %in% check_weights.res$warning_code))){
       B = bayesRecon:::.resample(B, weights, n_samples)
     }
     
-    
     ESS = sum(weights)**2/sum(weights**2)
+    #S: where is ESS used? If I am not mistaken, weights are performed in .resample
 
     B = t(B)
     U = A %*% B
@@ -173,3 +181,6 @@ forecast.lst_bayesRecon_MixCond <- function(
     fc
   })
 }
+
+
+# S: 

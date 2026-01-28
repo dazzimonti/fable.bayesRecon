@@ -5,8 +5,9 @@ library(fable)
 library(dplyr)
 devtools::load_all()
 source("R/bayesRecon_BUIS.R")
+source("R/bayesRecon_MixCond.R")
 
-# debug(bayesRecon_BUIS)
+debug(bayesRecon_MixCond)
 
 tourism_melb <- tourism |>
   filter(Region == "Melbourne")
@@ -23,7 +24,7 @@ fit <- tourism_melb %>%
     ets = ETS(Trips ~ trend("A"))
   ) %>%
   reconcile(
-    buis = bayesRecon_BUIS(ets)
+    buis = bayesRecon_MixCond(ets)
   )
 
 
