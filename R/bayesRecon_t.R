@@ -49,23 +49,23 @@ transpose_vec <- function(.l) {
 #' * `time_elapsed`: The time taken for the optimization.
 #'
 multi_log_score_optimization <- function(res, prior_mean, trim = 0.1) {
-  
+ 
   n_obs <- nrow(res)
   n_var <- ncol(res)
-  
+
   # Pre-compute cross-product of the residuals (to avoid recomputing inside the loop)
   RRt <- crossprod(res) 
-  
+
   # Define the Objective Function (Negative Log Score to minimize)
   objective_function <- function(nu) {
-    
+ 
     # Compute posterior Psi
     Psi <- (prior_mean * (nu - n_var - 1)) + RRt
 
     # Compute Cholesky decomposition 
     Psi_chol <- tryCatch(chol(Psi), error = function(e) return(NULL))
     if (is.null(Psi_chol)) return(Inf) # Return Inf if Psi is not positive definite
-    
+  
     # Invert (using Cholesky) 
     inv_Psi <- chol2inv(Psi_chol)
     
@@ -150,12 +150,13 @@ bayesRecon_t <- function(models) {
 #' 
 #' @method forecast lst_bayesRecon_t 
 #' 
-#' 
 #' @param object TODO
 #' @param key_data TODO
 #' @param point_forecast TODO 
 #' @param new_data TODO
-#' @param n_samples number of samples for output distribution
+#' @param prior Optional list containing 'nu' and 'Psi' (prior parameters).
+#' @param posterior Optional list containing 'nu' and 'Psi' (posterior parameters).
+#' @param l_shr Shrinkage intensity (0 to 1) for stabilizing the sample covariance matrix (default 1e-4).
 #' @param suppress_warnings if TRUE warnings are not returned
 #' @param ... extra parameters to be passed on.
 #' 
@@ -166,11 +167,12 @@ forecast.lst_bayesRecon_t <- function(
     key_data,
     point_forecast = list(.mean = mean),
     new_data = NULL,
+    prior = NULL,
+    posterior = NULL,
     l_shr = 1e-4,
     suppress_warnings = TRUE,
     ...
 ) {
-  # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   agg_data <- fabletools:::build_key_data_smat(key_data)
@@ -186,13 +188,11 @@ forecast.lst_bayesRecon_t <- function(
   ] <- 1L
   
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
-  #browser()
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
 
-  
   ##### START OUR REWRITE OF reconc_t() with distributional
   upr_ts <- which(rowSums(S) > 1)
   btm_ts <- which(rowSums(S) == 1)
@@ -200,7 +200,6 @@ forecast.lst_bayesRecon_t <- function(
   # The next two lines do indexing magic to return base_forecasts in the proper order for bayesRecon
   btm_idx <- apply(S[btm_ts, , drop = FALSE], 1, \(x) which(as.logical(x)))
   base_forecast_h <- transpose_vec(fc_dist[c(upr_ts, btm_ts[btm_idx])])
-
   n_upper = nrow(A)
   n_bottom = ncol(A)
   n_tot = n_upper + n_bottom
@@ -217,37 +216,60 @@ forecast.lst_bayesRecon_t <- function(
   }
   
   # S: to check whether this is correct
-  # S: wouldn't it be better to use Schafer and Strimmer?
+  # S: wouldn't it be better to use Schafer and Strimmer? Am I missing something?
   covm_res = crossprod(res) / nrow(res) 
   covm_res = (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))  
-
-  # Get observed data
-  obs = purrr::map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
-  if(length(unique(purrr::map_dbl(obs, nrow))) > 1){
-    # Join observed by index #199
-    obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(res[[1]]))[,-1]))
-  } else {
-    obs <- matrix(purrr::invoke(c, purrr::map(obs, `[[`, 2)), ncol = length(object))
-  }
   
-  # Compute the residuals of the naive
-  res_naive = diff(obs)
-  # TODO: handle seasonal naive (with diff(obs, freq))
-  covm_naive = bayesRecon::schaferStrimmer_cov(res_naive)$shrink_cov
+  if (!is.null(posterior)) {
+    # Try to get dirtly the posterior from the argument
+    if (is.list(posterior)) {
+      nu_post = posterior$nu
+      Psi_post = posterior$Psi
+      if (is.null(nu_post) | is.null(Psi_post)) {
+        stop("Input error: posterior must be a list with entries nu and Psi")
+      }
+    } else {
+      stop("Input error: posterior must be a list with entries nu and Psi")
+    }
+  } else {
+    if (!is.null(prior)) {
+      # Try to get dirty the prior from the argument
+      if (is.list(prior)) {
+        nu_prior = prior$nu
+        Psi_prior = prior$Psi
+        if (is.null(nu_prior) | is.null(Psi_prior)) {
+          stop("Input error: prior must be a list with entries nu and Psi")
+        }
+      } else {
+        stop("Input error: prior must be a list with entries nu and Psi")
+      }
+    } else {
+      # Compute the prior from observed data
+      obs = purrr::map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
+      if(length(unique(purrr::map_dbl(obs, nrow))) > 1){
+        # Join observed by index #199
+        obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(res[[1]]))[,-1]))
+      } else {
+        obs <- matrix(purrr::invoke(c, purrr::map(obs, `[[`, 2)), ncol = length(object))
+      }
+      # Compute the residuals of the naive
+      res_naive = diff(obs)
+      # TODO: handle seasonal naive (with diff(obs, freq))
+      covm_naive = bayesRecon::schaferStrimmer_cov(res_naive)$shrink_cov
+      
+      # Identify optimal prior parameters via LOO-CV
+      loo_cv = multi_log_score_optimization(res, covm_naive)
+      nu_prior = loo_cv$optimal_nu
+      Psi_prior = (nu_prior - n_tot - 1) * covm_naive
+    }
+    # Compute posterior parameters
+    Psi_post = Psi_prior + nrow(res) * covm_res
+    nu_post = nu_prior + nrow(res)
+  }
 
-  # Identify optimal prior parameters via LOO-CV
-  loo_cv = multi_log_score_optimization(res, covm_naive)
-  nu_prior = loo_cv$optimal_nu
-  Psi_prior = (nu_prior - n_tot - 1) * covm_naive
-    
-  # Compute posterior parameters
-  Psi_post = Psi_prior + nrow(res) * covm_res
-  nu_post = nu_prior + nrow(res)
-
+  # Slice the blocks of Psi related to upper and bottoms
   idx_u = seq_len(n_upper)
   idx_b = seq(n_upper + 1, n_tot)
-  
-  # Extract Psi blocks
   Psi_u <- Psi_post[idx_u, idx_u, drop = FALSE]
   Psi_b <- Psi_post[idx_b, idx_b, drop = FALSE]
   Psi_ub <- Psi_post[idx_u, idx_b, drop = FALSE] 
@@ -270,7 +292,6 @@ forecast.lst_bayesRecon_t <- function(
   # Lambda = Psi_UB^T - Psi_B A^T
   Lambda <- t(Psi_ub) - tcrossprod(Psi_b, A) 
   Lambda_invQ <- Lambda %*% inv_Q
-  
 
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
@@ -297,7 +318,7 @@ forecast.lst_bayesRecon_t <- function(
     # Compute Sigma_B_tilde = C * [ Psi_B - Lambda * Q^{-1} * Lambda^T ]
     Sigma_tilde_B <- as.numeric(C) * (Psi_b - tcrossprod(Lambda_invQ, Lambda))
     
-    # Compute the parameters of the upper
+    # Compute the parameters of the upper using closure property
     u_tilde = A %*% b_tilde
     Sigma_tilde_U = A %*% Sigma_tilde_B %*% t(A)
     
@@ -305,20 +326,19 @@ forecast.lst_bayesRecon_t <- function(
     return(distributional::dist_student_t(
       df = nu_tilde,
       mu = c(u_tilde, b_tilde),
-      sigma = c(diag(Sigma_tilde_U), diag(Sigma_tilde_B))
+      # S: to check wheter the following has to be scaled through sqrt
+      sigma = sqrt(c(diag(Sigma_tilde_U), diag(Sigma_tilde_B)))
     ))
   })
   
   # Fable needs the horizon and models in a different format
-  # Invert horizon <-> model. 
-  browser()
+  # Invert horizon <-> model.
   fc_dist <- transpose_vec(fc_dist)
   
   # t returns the upper/bottom ordering with upper on top and bottom below
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-  # browser()
   # The code below is Mitch magic that makes the returned object compatible with fable pipeline
   # you can copy paste this in other functions
   # In the next iteration of fable this will become a proper function 
