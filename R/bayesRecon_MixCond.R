@@ -29,7 +29,7 @@ bayesRecon_MixCond <- function(models) {
 #' @importFrom purrr map2
 #' @importFrom vctrs vec_c vec_slice
 #' @import bayesRecon
-#' @import dplyr 
+#' @import dplyr
 #' @import fable
 #' @import tsibble
 #' @import fabletools
@@ -61,104 +61,55 @@ forecast.lst_bayesRecon_MixCond <- function(
   # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
-  agg_data <- fabletools:::build_key_data_smat(key_data)
-  S <- matrix(
-    0L,
-    nrow = length(agg_data$agg),
-    ncol = max(vctrs::vec_c(!!!agg_data$agg))
-  )
-  S[
-    length(agg_data$agg) *
-      (vctrs::vec_c(!!!agg_data$agg) - 1) +
-      rep(seq_along(agg_data$agg), lengths(agg_data$agg))
-  ] <- 1L
-
+  S <- get_S(key_data)
+  
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
   fc <- NextMethod()
-
+  
   # Series of lapply to extract the parameters of the distribution
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
-
-  ##### START OUR REWRITE OF reconc_MixCond() with distributional
-  upr_ts <- which(rowSums(S) > 1)
-  btm_ts <- which(rowSums(S) == 1)
-  A <- S[rowSums(S) > 1, , drop = FALSE]
-  # The next two lines do indexing magic to return base_forecasts in the proper order for bayesRecon
-  btm_idx <- apply(S[btm_ts, , drop = FALSE], 1, \(x) which(as.logical(x)))
-  base_forecast_h <- transpose_vec(fc_dist[c(upr_ts, btm_ts[btm_idx])])
   
-  #S: btm_idx = 1 2 3 4
-  #S: base_forecasts[[1]] = N(1923, 10635) N(427, 3508)   N(594, 2549)   N(130, 1098)   N(700, 3411)
-
+  ##### START OUR REWRITE OF reconc_MixCond() with distributional
+  browser()
+  hier <- get_hier(S, fc_dist)
+  A <- hier$A
+  base_forecast_h <- hier$base_forecast_h
+  upr_ts <- hier$upr_ts
+  btm_ts <- hier$btm_ts
+  btm_idx <- hier$btm_idx
+  n_upr <- hier$n_upr
+  
+  # Compute upper sample covariance
+  res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
+  if (n_upr == 1){
+    upr_covm <- matrix(crossprod(res[,1])/nrow(res))
+  } else {
+    upr_covm <- bayesRecon::schaferStrimmer_cov(res[,1:n_upr])$shrink_cov
+  }
+  
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
-
-    # Save dimensions
-    n_upper = nrow(A)
-    n_bottom = ncol(A)
-    n_tot <- length(base_forecasts)
-
-    # save two lists of upper and bottom fc
-    upper_fc <- base_forecasts[seq_len(n_upper)]
-    bottom_fc <- base_forecasts[-seq_len(n_upper)]
-
-    # sample from bottom fc
-    B <- bottom_fc |> distributional::generate(times = n_samples)
-    # make B a matrix
-    B <- do.call(cbind, B)
-    # sample from upper fc
     
-    U = B %*% t(A)
-
-    # Compute sample covariance
-    res <- purrr::map(
-      object[c(upr_ts, btm_ts[btm_idx])], 
-      function(x, ...) residuals(x, ...), type = "response")
-    if(length(unique(purrr::map_dbl(res, nrow))) > 1){
-      # Join residuals by index #199
-      res <- unname(as.matrix(reduce(res, full_join, by = index_var(res[[1]]))[,-1]))
-    } else {
-      res <- matrix(purrr::invoke(c, purrr::map(res, `[[`, 2)), ncol = length(object))
-    }
-
-    #S: alternative: use res[,1:n_upper, drop=F] in schaferStrimmer_cov, but may give warning
-    if (n_upper == 1){
-      upper_covm <- matrix(crossprod(res[,1])/nrow(res))
-    } else {
-    upper_covm <- bayesRecon::schaferStrimmer_cov(res[,1:n_upper])$shrink_cov
-    }
+    browser()
+    # Save upper point forecast and bottom samples
+    mu_u <- base_forecasts[seq_along(n_upr)] |> mean()
+    B <- base_forecasts[-seq_along(n_upr)] |> generate(times = n_samples) |> do.call(what=cbind)
     
-    #browser()
-    mult_upper_fc <- distributional::dist_multivariate_normal(mu = list(sapply(upper_fc,mean)),
-                                                              sigma = list(upper_covm))
-
-    weights = stats::density(mult_upper_fc, U)[[1L]]
-
-
-    # Make weights a matrix
-    weights <- matrix(weights, ncol = 1)
-
-    # Checks on weights are inherited from bayesRecon
-    check_weights.res = bayesRecon:::.check_weights(weights)
+    out <- bayesRecon::.core_reconc_MixCond(
+      A = A,
+      B = B, 
+      mu_u = mu_u,
+      Sigma_u = upr_covm,
+      num_samples = n_samples,
+      return_type = "samples", 
+      suppress_warnings = FALSE
+    )
     
-    if (check_weights.res$warning & !suppress_warnings) {
-      warning_msg = check_weights.res$warning_msg
-      warning(warning_msg)
-    }
-    if(!(check_weights.res$warning & (1 %in% check_weights.res$warning_code))){
-      B = bayesRecon:::.resample(B, weights, n_samples)
-    }
-    
-    ESS = sum(weights)**2/sum(weights**2)
-    #S: where is ESS used? If I am not mistaken, weights are performed in .resample
-
-    B = t(B)
-    U = A %*% B
-    Y_reconc = rbind(U, B)
-    
+    # Return reconciled samples as a distributional object
+    Y_reconc = rbind(out$upper_reconciled$samples, out$bottom_reconciled$samples)
     return(distributional::dist_sample(split(Y_reconc, row(Y_reconc))))
-    ###### END REWRITE
   })
+  ###### END REWRITE
 
   # Fable needs the horizon and models in a different format
   # Invert horizon <-> model. 
@@ -181,6 +132,3 @@ forecast.lst_bayesRecon_MixCond <- function(
     fc
   })
 }
-
-
-# S: 

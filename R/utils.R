@@ -58,3 +58,5 @@ get_residuals <- function(object, upr_ts, btm_ts, btm_idx){
   }
   return(res)
 }
+  
+  

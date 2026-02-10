@@ -1,9 +1,3 @@
-transpose_vec <- function(.l) {
-  result <- lapply(seq_along(.l[[1]]), function(i) {
-    do.call(vctrs::vec_c, lapply(.l, vctrs::vec_slice, i))
-  })
-}
-
 #' BUIS for Probabilistic Reconciliation of forecasts via conditioning
 #'
 #' Uses the Bottom-Up Importance Sampling algorithm to draw samples from the reconciled
@@ -57,43 +51,28 @@ forecast.lst_bayesRecon_BUIS <- function(
   # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
-  agg_data <- fabletools:::build_key_data_smat(key_data)
-  S <- matrix(
-    0L,
-    nrow = length(agg_data$agg),
-    ncol = max(vctrs::vec_c(!!!agg_data$agg))
-  )
-  S[
-    length(agg_data$agg) *
-      (vctrs::vec_c(!!!agg_data$agg) - 1) +
-      rep(seq_along(agg_data$agg), lengths(agg_data$agg))
-  ] <- 1L
-
+  S <- get_S(key_data)
+  
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
   fc <- NextMethod()
-
+  
   # Series of lapply to extract the parameters of the distribution
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
-
-  ##### START OUR REWRITE OF reconc_BUIS() with distributional
-  upr_ts <- which(rowSums(S) > 1)
-  btm_ts <- which(rowSums(S) == 1)
-  A <- S[rowSums(S) > 1, , drop = FALSE]
-  # The next two lines do indexing magic to return base_forecasts in the proper order for BUIS
-  btm_idx <- apply(S[btm_ts, , drop = FALSE], 1, \(x) which(as.logical(x)))
-  base_forecast_h <- transpose_vec(fc_dist[c(upr_ts, btm_ts[btm_idx])])
-
+  
+  ##### START OUR REWRITE OF reconc_t() with distributional
+  browser()
+  hier <- get_hier(S, fc_dist)
+  A <- hier$A
+  base_forecast_h <- hier$base_forecast_h
+  n_upr = hier$n_upr
+  n_btm = hier$n_btm
+  
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
-
-    # Save dimensions
-    n_upper = nrow(A)
-    n_bottom = ncol(A)
-    n_tot <- length(base_forecasts)
-
+    
     # save two lists of upper and bottom fc
-    upper_fc <- base_forecasts[seq_len(n_upper)]
-    bottom_fc <- base_forecasts[-seq_len(n_upper)]
+    upper_fc <- base_forecasts[seq_len(n_upr)]
+    bottom_fc <- base_forecasts[-seq_len(n_btm)]
 
     # sample from bottom fc
     B <- bottom_fc |> distributional::generate(times = n_samples)
@@ -132,7 +111,7 @@ forecast.lst_bayesRecon_BUIS <- function(
       return(stats::density(u, as.numeric(b))[[1L]])
     }
 
-    B = bayesRecon:::.core_reconc_BUIS(A=A,H=H,G=G,B=B,
+    B = bayesRecon::.core_reconc_BUIS(A=A,H=H,G=G,B=B,
                      upper_base_forecasts_H = upp_base_H,
                     in_typeH = in_typeH, distr_H = distr_H,
                     upper_base_forecasts_G = upp_base_G,
