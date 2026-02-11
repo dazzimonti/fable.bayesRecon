@@ -63,7 +63,6 @@ forecast.lst_bayesRecon_t <- function(
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
 
   ##### START OUR REWRITE OF reconc_t() with distributional
-  browser()
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
@@ -72,9 +71,10 @@ forecast.lst_bayesRecon_t <- function(
     stop("t-reconciliation works under the assumption of Normal forecasts")
   }
   
+  # Compute the covariance matrix of the residuals
   res <- get_residuals(object, hier$upr_ts, hier$btm_ts, hier$btm_idx)
-  covm_res = crossprod(res) / nrow(res) 
-  covm_res = (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))  
+  covm_res <- crossprod(res) / nrow(res) 
+  covm_res <- (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))  
   
   if (!is.null(posterior)) {
     # Try to get dirtly the posterior from the argument
@@ -131,7 +131,6 @@ forecast.lst_bayesRecon_t <- function(
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
-    browser()
     # Extrapolate point forecast
     point_fc = purrr::map_dbl(base_forecasts, mean)
     out = bayesRecon::.core_reconc_t(
@@ -165,8 +164,7 @@ forecast.lst_bayesRecon_t <- function(
       sigma = sqrt(c(diag(out$upper_scale_matrix), diag(out$bottom_scale_matrix)))
     ))
   })
-  
-  browser()
+  # END REWRITE OF bayesRecon_t
   
   # Fable needs the horizon and models in a different format
   # Invert horizon <-> model.

@@ -17,7 +17,6 @@ transpose_vec <- function(.l) {
 #'
 #' @export
 bayesRecon_MixCond <- function(models) {
-  # For this I need an explanation
   structure(models, class = c("lst_bayesRecon_MixCond", "lst_mdl", "list"))
 }
 
@@ -70,7 +69,6 @@ forecast.lst_bayesRecon_MixCond <- function(
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
   
   ##### START OUR REWRITE OF reconc_MixCond() with distributional
-  browser()
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
@@ -79,21 +77,20 @@ forecast.lst_bayesRecon_MixCond <- function(
   btm_idx <- hier$btm_idx
   n_upr <- hier$n_upr
   
-  # Compute upper sample covariance
-  res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
+  # Compute upper sample covariance, drop rows containing nans
+  res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, "upper")
   if (n_upr == 1){
-    upr_covm <- matrix(crossprod(res[,1])/nrow(res))
+    upr_covm <- matrix(crossprod(res_upr)/nrow(res_upr))
   } else {
-    upr_covm <- bayesRecon::schaferStrimmer_cov(res[,1:n_upr])$shrink_cov
+    upr_covm <- bayesRecon::schaferStrimmer_cov(res_upr)$shrink_cov
   }
   
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
-    browser()
     # Save upper point forecast and bottom samples
-    mu_u <- base_forecasts[seq_along(n_upr)] |> mean()
-    B <- base_forecasts[-seq_along(n_upr)] |> generate(times = n_samples) |> do.call(what=cbind)
+    mu_u <- base_forecasts[seq_len(n_upr)] |> mean()
+    B <- base_forecasts[-seq_len(n_upr)] |> generate(times = n_samples) |> do.call(what=cbind)
     
     out <- bayesRecon::.core_reconc_MixCond(
       A = A,

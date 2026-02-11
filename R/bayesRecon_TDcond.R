@@ -55,7 +55,6 @@ forecast.lst_bayesRecon_TDcond <- function(
     suppress_warnings = TRUE,
     ...
 ) {
-  # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   S <- get_S(key_data)
@@ -67,7 +66,6 @@ forecast.lst_bayesRecon_TDcond <- function(
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
   
   ##### START OUR REWRITE OF reconc_TDcond() with distributional
-  browser()
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
@@ -76,20 +74,20 @@ forecast.lst_bayesRecon_TDcond <- function(
   btm_idx <- hier$btm_idx
   n_upr <- hier$n_upr
   
-  # Compute sample covariance
-  res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
+  # Compute upper sample covariance, drop rows containing nans
+  res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, "upper")
   if (n_upr == 1){
-    upr_covm <- matrix(crossprod(res[,1])/nrow(res))
+    upr_covm <- matrix(crossprod(res_upr)/nrow(res_upr))
   } else {
-    upr_covm <- bayesRecon::schaferStrimmer_cov(res[,1:n_upr])$shrink_cov
+    upr_covm <- bayesRecon::schaferStrimmer_cov(res_upr)$shrink_cov
   }
   
-  
+  # Iterate the reconciliation across horizons
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Save upper point forecast and bottom PMF
-    mu_u <- base_forecasts[seq_along(n_upr)] |> mean()
-    L_pmf <- make_PMF(base_forecasts[-seq_along(n_upr)])
+    mu_u <- base_forecasts[seq_len(n_upr)] |> mean()
+    L_pmf <- make_PMF(base_forecasts[-seq_len(n_upr)])
 
     # Apply the core function from bayesRecon
     out <- bayesRecon::.core_reconc_TDcond(
@@ -116,7 +114,6 @@ forecast.lst_bayesRecon_TDcond <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-  # browser()
   # The code below is Mitch magic that makes the returned object compatible with fable pipeline
   # you can copy paste this in other functions
   # In the next iteration of fable this will become a proper function 
@@ -132,7 +129,7 @@ forecast.lst_bayesRecon_TDcond <- function(
 
 
 make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, num_samples = 1e04, alpha_smoothing = 1e-9){
-  supp <- dist |> support()
+  supp <- dist |> distributional::support()
   # Identify the negatively supported distirbutions and truncate them at zero
   neg_lb <- supp |> vctrs::field("lim") |> vapply(\(x) x[1], numeric(1)) < 0
   if (any(neg_lb)){

@@ -59,20 +59,23 @@ forecast.lst_bayesRecon_BUIS <- function(
   # Series of lapply to extract the parameters of the distribution
   fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
   
-  ##### START OUR REWRITE OF reconc_t() with distributional
-  browser()
+  ##### START OUR REWRITE OF reconc_BUIS() with distributional
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
-  n_upr = hier$n_upr
-  n_btm = hier$n_btm
+  n_upr <- hier$n_upr
+  n_btm <- hier$n_btm
+  upr_ts <- hier$upr_ts
+  btm_ts <- hier$btm_ts
+  btm_idx <- hier$btm_idx
+  
   
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # save two lists of upper and bottom fc
     upper_fc <- base_forecasts[seq_len(n_upr)]
-    bottom_fc <- base_forecasts[-seq_len(n_btm)]
+    bottom_fc <- base_forecasts[-seq_len(n_upr)]
 
     # sample from bottom fc
     B <- bottom_fc |> distributional::generate(times = n_samples)
@@ -94,7 +97,7 @@ forecast.lst_bayesRecon_BUIS <- function(
       in_typeG = NULL
       distr_G  = NULL
     }else{
-      get_HG.res = bayesRecon:::.get_HG(A, upper_fc, rep(0,n_upper),rep(0,n_upper))
+      get_HG.res = bayesRecon:::.get_HG(A, upper_fc, rep(0,n_upr),rep(0,n_upr))
       H = get_HG.res$H
       upp_base_H = get_HG.res$Hv
       G = get_HG.res$G

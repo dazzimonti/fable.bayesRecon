@@ -45,17 +45,26 @@ get_hier <- function(S, fc_dist){
 }
 
 
-get_residuals <- function(object, upr_ts, btm_ts, btm_idx){
+get_residuals <- function(object, upr_ts, btm_ts, btm_idx, level=c("all","upper","bottom")){
+  level <- match.arg(level)
   # Compute sample covariance
   res <- purrr::map(
     object[c(upr_ts, btm_ts[btm_idx])], 
     function(x, ...) residuals(x, ...), type = "response")
   if(length(unique(purrr::map_dbl(res, nrow))) > 1){
     # Join residuals by index #199
-    res <- unname(as.matrix(reduce(res, full_join, by = index_var(res[[1]]))[,-1]))
+    res <- unname(as.matrix(purrr::reduce(res, dplyr::full_join, by = index_var(res[[1]]))[,-1]))
   } else {
     res <- matrix(purrr::invoke(c, purrr::map(res, `[[`, 2)), ncol = length(object))
   }
+  # select the level of residuals to return
+  if (level == "upper") {
+    res <- res[, upr_ts, drop = FALSE]
+  } else if (level == "bottom") {
+    res <- res[, btm_ts[btm_idx], drop = FALSE]
+  }
+  # Drop lines with NAs
+  res <- res[complete.cases(res), , drop = FALSE]
   return(res)
 }
   
