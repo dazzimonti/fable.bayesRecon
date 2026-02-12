@@ -1,45 +1,51 @@
-#' TODO
+#' Student-t forecast reconciliation
 #'
-#' @description
-#'
-#' TODO
+#' Creates an object for probabilistic forecast reconciliation using
+#' Student-t distributions. This method applies a multivariate Student-t model
+#' to both prior and posterior estimation, accounting for heavier tails than
+#' normal distributions.
 #'
 #' @param models A list of fitted models to reconcile.
 #'
 #' @return An object of class `lst_bayesRecon_t`.
 #'
 #' @export
+#'
+#' @examples
+#' # bayesRecon_t(base_models)
 bayesRecon_t <- function(models) {
-  # For this I need an explanation
   structure(models, class = c("lst_bayesRecon_t", "lst_mdl", "list"))
 }
 
 #' forecast.lst_bayesRecon_t
-#' 
-# @importFrom fabletools forecast distribution_var
-#' @importFrom distributional mean
+#'
+#' Produces probabilistic forecasts reconciled via Student-t reconciliation.
+#' The method reconciles base forecasts from upper and bottom level series
+#' using a multivariate Student-t model with flexible prior/posterior specification.
+#'
+#' @importFrom fabletools forecast distribution_var
 #' @importFrom stats density
-#' @importFrom purrr map2
+#' @importFrom purrr map map2 map_dbl list_c reduce invoke
 #' @importFrom vctrs vec_c vec_slice
-#' @import bayesRecon
-#' @import dplyr 
-#' @import fable
-#' @import tsibble
-#' @import fabletools
-#' 
-#' @method forecast lst_bayesRecon_t 
-#' 
-#' @param object TODO
-#' @param key_data TODO
-#' @param point_forecast TODO 
-#' @param new_data TODO
-#' @param prior Optional list containing 'nu' and 'Psi' (prior parameters).
-#' @param posterior Optional list containing 'nu' and 'Psi' (posterior parameters).
-#' @param l_shr Shrinkage intensity (0 to 1) for stabilizing the sample covariance matrix (default 1e-4).
-#' @param suppress_warnings if TRUE warnings are not returned
-#' @param ... extra parameters to be passed on.
-#' 
-#' @description takes a list of of models and returns a list of reconciled models
+#' @importFrom bayesRecon .core_reconc_t schaferStrimmer_cov multi_log_score_optimization
+#' @importFrom dplyr full_join
+#' @importFrom tsibble index_var
+#' @importFrom distributional dist_student_t
+#'
+#' @method forecast lst_bayesRecon_t
+#'
+#' @param object An object of class `lst_bayesRecon_t` containing fitted  models.
+#' @param key_data A keyed data frame from `fabletools`.
+#' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
+#' @param new_data Optional new data for forecasting (not currently used).
+#' @param prior Optional list with `$nu` and `$Psi` for prior specification.
+#' @param posterior Optional list with `$nu` and `$Psi` for posterior specification.
+#' @param l_shr Shrinkage intensity (0 to 1) applied to sample covariance (default: 1e-4).
+#' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
+#' @param ... Additional arguments passed to other methods.
+#'
+#' @return A fable object with reconciled distributions and point forecasts.
+#'
 #' @export
 forecast.lst_bayesRecon_t <- function(
     object,
@@ -52,7 +58,7 @@ forecast.lst_bayesRecon_t <- function(
     suppress_warnings = TRUE,
     ...
 ) {
-  # Take models from fabletools, and prepare for t-rec
+  # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   S <- get_S(key_data)
   
@@ -60,19 +66,23 @@ forecast.lst_bayesRecon_t <- function(
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
-  fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
+  fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
 
-  ##### START OUR REWRITE OF reconc_t() with distributional
+  ## START OUR REWRITE OF bayesRecon_t WITH distirbutional
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
-  
-  if (!all(purrr::map(base_forecast_h, family) |> purrr::list_c() == "normal")){
+  upr_ts <- hier$upr_ts
+  btm_ts <- hier$btm_ts
+  btm_idx <- hier$btm_idx
+  n_tot <- hier$n_tot
+
+  if (!all(map(base_forecast_h, family) |> list_c() == "normal")) {
     stop("t-reconciliation works under the assumption of Normal forecasts")
   }
   
   # Compute the covariance matrix of the residuals
-  res <- get_residuals(object, hier$upr_ts, hier$btm_ts, hier$btm_idx)
+  res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
   covm_res <- crossprod(res) / nrow(res) 
   covm_res <- (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))  
   
@@ -101,22 +111,19 @@ forecast.lst_bayesRecon_t <- function(
       }
     } else {
       # Compute the prior from observed data
-      upr_ts <- hier$upr_ts
-      btm_ts <- hier$btm_ts
-      btm_idx <- hier$btm_idx
-      n_tot <- hier$n_tot
+
       # Obtain past observations in matrix format
-      obs = purrr::map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
-      if(length(unique(purrr::map_dbl(obs, nrow))) > 1){
+      obs = map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
+      if(length(unique(map_dbl(obs, nrow))) > 1){
         # Join observed by index #199
         obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(res[[1]]))[,-1]))
       } else {
-        obs <- matrix(purrr::invoke(c, purrr::map(obs, `[[`, 2)), ncol = length(object))
+        obs <- matrix(invoke(c, map(obs, `[[`, 2)), ncol = length(object))
       }
       # Compute the residuals of the naive
       res_naive = diff(obs)
       # TODO: handle seasonal naive (with diff(obs, freq))
-      covm_naive = bayesRecon::schaferStrimmer_cov(res_naive)$shrink_cov
+      covm_naive = schaferStrimmer_cov(res_naive)$shrink_cov
       
       # Identify optimal prior parameters via LOO-CV
       loo_cv = multi_log_score_optimization(res, covm_naive)
@@ -132,8 +139,8 @@ forecast.lst_bayesRecon_t <- function(
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Extrapolate point forecast
-    point_fc = purrr::map_dbl(base_forecasts, mean)
-    out = bayesRecon::.core_reconc_t(
+    point_fc = map_dbl(base_forecasts, mean)
+    out = .core_reconc_t(
       A = A,
       point_fc = point_fc,
       Psi = Psi_post,
@@ -157,7 +164,7 @@ forecast.lst_bayesRecon_t <- function(
     #   )))
     
     # Return the distributional Student-t distribution
-    return(distributional::dist_student_t(
+    return(dist_student_t(
       df = out$bottom_df,
       mu = c(out$upper_mean, out$bottom_mean),
       # S: to check wheter the following has to be scaled through sqrt
@@ -174,15 +181,5 @@ forecast.lst_bayesRecon_t <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-  # The code below is Mitch magic that makes the returned object compatible with fable pipeline
-  # you can copy paste this in other functions
-  # In the next iteration of fable this will become a proper function 
-  # (or it won't be needed anymore because it will be handled outside of the reconcile functions)
-  purrr::map2(fc, fc_dist, function(fc, dist) {
-    dimnames(dist) <- dimnames(fc[[fabletools::distribution_var(fc)]])
-    fc[[fabletools::distribution_var(fc)]] <- dist
-    point_fc <- fabletools:::compute_point_forecasts(dist, point_forecast)
-    fc[names(point_fc)] <- point_fc
-    fc
-  })
+  get_output_fc(fc, fc_dist, point_forecast)
 }

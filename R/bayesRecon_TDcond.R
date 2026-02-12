@@ -20,21 +20,14 @@ bayesRecon_TDcond <- function(models) {
 
 #' forecast.lst_bayesRecon_TDcond
 #' 
-# @importFrom fabletools forecast distribution_var
-#' @importFrom distributional generate dist_sample
+#' @importFrom fabletools forecast distribution_var
+#' @importFrom distributional generate dist_sample dist_truncated support
 #' @importFrom stats density
 #' @importFrom purrr map2
-#' @importFrom vctrs vec_c vec_slice
-#' @import bayesRecon
-#' @import dplyr 
-#' @import fable
-#' @import tsibble
-#' @import fabletools
-# @importFrom bayesRecon .check_weights .resample
+#' @importFrom vctrs field
+#' @importFrom bayesRecon .core_reconc_TDcond schaferStrimmer_cov
 #' 
 #' @method forecast lst_bayesRecon_TDcond 
-#' 
-#'
 #' 
 #' @param object TODO
 #' @param key_data TODO
@@ -63,7 +56,7 @@ forecast.lst_bayesRecon_TDcond <- function(
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
-  fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
+  fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
   
   ##### START OUR REWRITE OF reconc_TDcond() with distributional
   hier <- get_hier(S, fc_dist)
@@ -79,7 +72,7 @@ forecast.lst_bayesRecon_TDcond <- function(
   if (n_upr == 1){
     upr_covm <- matrix(crossprod(res_upr)/nrow(res_upr))
   } else {
-    upr_covm <- bayesRecon::schaferStrimmer_cov(res_upr)$shrink_cov
+    upr_covm <- schaferStrimmer_cov(res_upr)$shrink_cov
   }
   
   # Iterate the reconciliation across horizons
@@ -90,7 +83,7 @@ forecast.lst_bayesRecon_TDcond <- function(
     L_pmf <- make_PMF(base_forecasts[-seq_len(n_upr)])
 
     # Apply the core function from bayesRecon
-    out <- bayesRecon::.core_reconc_TDcond(
+    out <- .core_reconc_TDcond(
       A = A,
       mu_u = mu_u,
       Sigma_u = upr_covm,
@@ -102,7 +95,7 @@ forecast.lst_bayesRecon_TDcond <- function(
     
     # Return reconciled samples as a distributional object
     Y_reconc = rbind(out$upper_reconciled$samples, out$bottom_reconciled$samples)
-    return(distributional::dist_sample(split(Y_reconc, row(Y_reconc))))
+    return(dist_sample(split(Y_reconc, row(Y_reconc))))
   })
   # END REWRITE
   
@@ -114,37 +107,27 @@ forecast.lst_bayesRecon_TDcond <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-  # The code below is Mitch magic that makes the returned object compatible with fable pipeline
-  # you can copy paste this in other functions
-  # In the next iteration of fable this will become a proper function 
-  # (or it won't be needed anymore because it will be handled outside of the reconcile functions)
-  purrr::map2(fc, fc_dist, function(fc, dist) {
-    dimnames(dist) <- dimnames(fc[[fabletools::distribution_var(fc)]])
-    fc[[fabletools::distribution_var(fc)]] <- dist
-    point_fc <- fabletools:::compute_point_forecasts(dist, point_forecast)
-    fc[names(point_fc)] <- point_fc
-    fc
-  })
+  get_output_fc(fc, fc_dist, point_forecast)
 }
 
 
 make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, num_samples = 1e04, alpha_smoothing = 1e-9){
-  supp <- dist |> distributional::support()
+  supp <- dist |> support()
   # Identify the negatively supported distirbutions and truncate them at zero
-  neg_lb <- supp |> vctrs::field("lim") |> vapply(\(x) x[1], numeric(1)) < 0
+  neg_lb <- supp |> field("lim") |> vapply(\(x) x[1], numeric(1)) < 0
   if (any(neg_lb)){
     warning("Negative support corrected via truncation")
-    dist[neg_lb] <- dist[neg_lb] |> distributional::dist_truncated(0, Inf)
+    dist[neg_lb] <- dist[neg_lb] |> dist_truncated(0, Inf)
   }
   #selec thigs withs support not in N0 or N+ and truncate them at zero
   int_val <- supp |> format() |> names() %in% c("N0", "N+", "Z") 
   if (!all(int_val)){
     warning("Non-integer support corrected via rounding")
     dist[!int_val] <- dist[!int_val] |> generate(num_samples) |> 
-      lapply(\(x) as.integer(x)) |> distributional::dist_sample()
+      lapply(\(x) as.integer(x)) |> dist_sample()
   }
   # Compute the pmf up to a certain quantile to bound it
   M <- dist |> quantile(1 - toll)
-  pmf <- purrr::map2(dist, M, ~ density(.x, 0:.y)[[1]])
+  pmf <- map2(dist, M, ~ density(.x, 0:.y)[[1]])
   return(pmf)
 }

@@ -14,31 +14,27 @@ bayesRecon_BUIS <- function(models) {
 }
 
 #' forecast.lst_bayesRecon_BUIS
-#' 
-# @importFrom fabletools forecast distribution_var
+#'
+#' Produces probabilistic forecasts reconciled via Bottom-Up Importance Sampling (BUIS).
+#' This method samples from bottom-level distributions, computes upper-level paths via
+#' aggregation, and reweights samples according to upper-level forecast densities.
+#'
+#' @importFrom fabletools forecast distribution_var
 #' @importFrom distributional generate dist_sample
 #' @importFrom stats density
-#' @importFrom purrr map2
-#' @importFrom vctrs vec_c vec_slice
-#' @import bayesRecon
-#' @import dplyr 
-#' @import fable
-#' @import tsibble
-#' @import fabletools
 #' @importFrom bayesRecon .check_hierarchical
-#' 
-#' @method forecast lst_bayesRecon_BUIS 
-#' 
-#' 
-#' 
-#' @param object TODO
-#' @param key_data TODO
-#' @param point_forecast TODO 
-#' @param new_data TODO
-#' @param n_samples number of samples for output distribution
-#' @param ... extra parameters to be passed on.
-#' 
-#' @description takes a list of of models and returns a list of reconciled models
+#'
+#' @method forecast lst_bayesRecon_BUIS
+#'
+#' @param object An object of class `lst_bayesRecon_BUIS` containing fitted models.
+#' @param key_data A keyed data frame from `fabletools`.
+#' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
+#' @param new_data Optional new data for forecasting (not currently used).
+#' @param n_samples Number of samples to draw from bottom distributions (default: 1000).
+#' @param ... Additional arguments passed to other methods.
+#'
+#' @return A fable object with BUIS-reconciled distributions and point forecasts.
+#'
 #' @export
 forecast.lst_bayesRecon_BUIS <- function(
   object,
@@ -48,16 +44,17 @@ forecast.lst_bayesRecon_BUIS <- function(
   n_samples = 1000,
   ...
 ) {
-  # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   S <- get_S(key_data)
+  core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
+  get_HG <- getFromNamespace(".get_HG", "bayesRecon")
   
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
-  fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
+  fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
   
   ##### START OUR REWRITE OF reconc_BUIS() with distributional
   hier <- get_hier(S, fc_dist)
@@ -77,16 +74,13 @@ forecast.lst_bayesRecon_BUIS <- function(
     upper_fc <- base_forecasts[seq_len(n_upr)]
     bottom_fc <- base_forecasts[-seq_len(n_upr)]
 
-    # sample from bottom fc
-    B <- bottom_fc |> distributional::generate(times = n_samples)
-    # make B a matrix
-    B <- do.call(cbind, B)
+    # sample from bottom fc and make it a matrix
+    B <- bottom_fc |> generate(times = n_samples) |> do.call(what=cbind)
 
     # TODO: BUIS CURRENTLY IMPLEMENTED ONLY for hierarchies!
     # H, G
     # browser()
-    is.hier = bayesRecon:::.check_hierarchical(A)
-    # browser()
+    is.hier = .check_hierarchical(A)
     if(is.hier){
       H <- A
       G <- NULL
@@ -97,7 +91,7 @@ forecast.lst_bayesRecon_BUIS <- function(
       in_typeG = NULL
       distr_G  = NULL
     }else{
-      get_HG.res = bayesRecon:::.get_HG(A, upper_fc, rep(0,n_upr),rep(0,n_upr))
+      get_HG.res = get_HG(A, upper_fc, rep(0, n_upr), rep(0, n_upr))
       H = get_HG.res$H
       upp_base_H = get_HG.res$Hv
       G = get_HG.res$G
@@ -111,16 +105,16 @@ forecast.lst_bayesRecon_BUIS <- function(
     .comp_w_distributional <- function(b, u,    
                                        in_type_ = NULL, 
                                        distr_ = NULL){
-      return(stats::density(u, as.numeric(b))[[1L]])
+      return(density(u, as.numeric(b))[[1L]])
     }
 
-    B = bayesRecon::.core_reconc_BUIS(A=A,H=H,G=G,B=B,
-                     upper_base_forecasts_H = upp_base_H,
-                    in_typeH = in_typeH, distr_H = distr_H,
-                    upper_base_forecasts_G = upp_base_G,
-                    in_typeG = in_typeG, distr_G = distr_G,
-                    .comp_w = .comp_w_distributional, 
-                    suppress_warnings = FALSE)
+    B = core_reconc_BUIS(A = A, H = H, G = G, B = B,
+                         upper_base_forecasts_H = upp_base_H,
+                         in_typeH = in_typeH, distr_H = distr_H,
+                         upper_base_forecasts_G = upp_base_G,
+                         in_typeG = in_typeG, distr_G = distr_G,
+                         .comp_w = .comp_w_distributional,
+                         suppress_warnings = FALSE)
 
     # for (hi in 1:nrow(H)) {
     #   c = H[hi,]
@@ -152,8 +146,8 @@ forecast.lst_bayesRecon_BUIS <- function(
     U = A %*% B
     Y_reconc = rbind(U, B)
 
-    distributional::dist_sample(split(Y_reconc, row(Y_reconc)))
-    ###### END REWRITE
+    dist_sample(split(Y_reconc, row(Y_reconc)))
+    ### END REWRITE
   })
 
   # Old code to extract from the models the mean and sd manually. 
@@ -183,16 +177,5 @@ forecast.lst_bayesRecon_BUIS <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-
-  # The code below is Mitch magic that makes the returned object compatible with fable pipeline
-  # you can copy paste this in other functions
-  # In the next iteration of fable this will become a proper function 
-  # (or it won't be needed anymore because it will be handled outside of the reconcile functions)
-  purrr::map2(fc, fc_dist, function(fc, dist) {
-    dimnames(dist) <- dimnames(fc[[fabletools::distribution_var(fc)]])
-    fc[[fabletools::distribution_var(fc)]] <- dist
-    point_fc <- fabletools:::compute_point_forecasts(dist, point_forecast)
-    fc[names(point_fc)] <- point_fc
-    fc
-  })
+  get_output_fc(fc, fc_dist, point_forecast)
 }

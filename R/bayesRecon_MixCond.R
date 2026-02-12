@@ -1,9 +1,3 @@
-transpose_vec <- function(.l) {
-  result <- lapply(seq_along(.l[[1]]), function(i) {
-    do.call(vctrs::vec_c, lapply(.l, vctrs::vec_slice, i))
-  })
-}
-
 #' Probabilistic forecast reconciliation of mixed hierarchies via conditioning
 #'
 #' @description
@@ -21,32 +15,29 @@ bayesRecon_MixCond <- function(models) {
 }
 
 #' forecast.lst_bayesRecon_MixCond
-#' 
-# @importFrom fabletools forecast distribution_var
+#'
+#' Produces probabilistic forecasts reconciled via mixed hierarchy conditioning.
+#' This method handles mixed hierarchies (with cross-constraints) by applying
+#' conditioning-based reconciliation to draw samples from the reconciled distributions.
+#'
+#' @importFrom fabletools forecast distribution_var
 #' @importFrom distributional generate dist_sample
 #' @importFrom stats density
 #' @importFrom purrr map2
-#' @importFrom vctrs vec_c vec_slice
-#' @import bayesRecon
-#' @import dplyr
-#' @import fable
-#' @import tsibble
-#' @import fabletools
-# @importFrom bayesRecon .check_weights .resample
-#' 
-#' @method forecast lst_bayesRecon_MixCond 
-#' 
-#' 
-#' 
-#' @param object TODO
-#' @param key_data TODO
-#' @param point_forecast TODO 
-#' @param new_data TODO
-#' @param n_samples number of samples for output distribution
-#' @param suppress_warnings if TRUE warnings are not returned
-#' @param ... extra parameters to be passed on.
-#' 
-#' @description takes a list of of models and returns a list of reconciled models
+#' @importFrom bayesRecon .core_reconc_MixCond schaferStrimmer_cov
+#'
+#' @method forecast lst_bayesRecon_MixCond
+#'
+#' @param object An object of class `lst_bayesRecon_MixCond` containing fitted models.
+#' @param key_data A keyed data frame from `fabletools`.
+#' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
+#' @param new_data Optional new data for forecasting (not currently used).
+#' @param n_samples Number of samples to draw (default: 1000).
+#' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
+#' @param ... Additional arguments passed to other methods.
+#'
+#' @return A fable object with MixCond-reconciled distributions and point forecasts.
+#'
 #' @export
 forecast.lst_bayesRecon_MixCond <- function(
   object,
@@ -57,7 +48,6 @@ forecast.lst_bayesRecon_MixCond <- function(
   suppress_warnings = TRUE,
   ...
 ) {
-  # browser()
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   S <- get_S(key_data)
@@ -66,7 +56,7 @@ forecast.lst_bayesRecon_MixCond <- function(
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
-  fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
+  fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
   
   ##### START OUR REWRITE OF reconc_MixCond() with distributional
   hier <- get_hier(S, fc_dist)
@@ -82,19 +72,19 @@ forecast.lst_bayesRecon_MixCond <- function(
   if (n_upr == 1){
     upr_covm <- matrix(crossprod(res_upr)/nrow(res_upr))
   } else {
-    upr_covm <- bayesRecon::schaferStrimmer_cov(res_upr)$shrink_cov
+    upr_covm <- schaferStrimmer_cov(res_upr)$shrink_cov
   }
   
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
-    # Save upper point forecast and bottom samples
+    # Save upper point forecast vector and bottom samples matrix
     mu_u <- base_forecasts[seq_len(n_upr)] |> mean()
     B <- base_forecasts[-seq_len(n_upr)] |> generate(times = n_samples) |> do.call(what=cbind)
     
-    out <- bayesRecon::.core_reconc_MixCond(
+    out <- .core_reconc_MixCond(
       A = A,
-      B = B, 
+      B = B,
       mu_u = mu_u,
       Sigma_u = upr_covm,
       num_samples = n_samples,
@@ -104,7 +94,7 @@ forecast.lst_bayesRecon_MixCond <- function(
     
     # Return reconciled samples as a distributional object
     Y_reconc = rbind(out$upper_reconciled$samples, out$bottom_reconciled$samples)
-    return(distributional::dist_sample(split(Y_reconc, row(Y_reconc))))
+    return(dist_sample(split(Y_reconc, row(Y_reconc))))
   })
   ###### END REWRITE
 
@@ -116,16 +106,5 @@ forecast.lst_bayesRecon_MixCond <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-  # browser()
-  # The code below is Mitch magic that makes the returned object compatible with fable pipeline
-  # you can copy paste this in other functions
-  # In the next iteration of fable this will become a proper function 
-  # (or it won't be needed anymore because it will be handled outside of the reconcile functions)
-  purrr::map2(fc, fc_dist, function(fc, dist) {
-    dimnames(dist) <- dimnames(fc[[fabletools::distribution_var(fc)]])
-    fc[[fabletools::distribution_var(fc)]] <- dist
-    point_fc <- fabletools:::compute_point_forecasts(dist, point_forecast)
-    fc[names(point_fc)] <- point_fc
-    fc
-  })
+  get_output_fc(fc, fc_dist, point_forecast)
 }
