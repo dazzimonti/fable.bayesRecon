@@ -21,19 +21,19 @@ hier_filter <- function(data, level = c("upper", "bottom")) {
 
 
 tourism_melbourne <- function() {
-  data <- tourism |>
+  data <- tsibble::tourism |>
     filter(Region == "Melbourne") |> 
     aggregate_key(Purpose, Trips = sum(Trips))
 
   fit <- data |> 
     filter(Quarter < yearquarter("2015 Q1")) |> 
-    model(base = ETS(Trips ~ trend("A")))
+    model(base = ETS(Trips ~ trend("A") + season("A")))
   return(fit)
 }
 
 
 tourism_2purposes2states <- function() {
-  data <- tourism |>
+  data <- tsibble::tourism |>
     filter(Purpose %in% c("Business", "Holiday")) |>
     filter(State %in% c("Northern Territory", "Western Australia")) |>
     aggregate_key(Purpose * (State / Region), Trips = sum(Trips))
@@ -46,7 +46,7 @@ tourism_2purposes2states <- function() {
 
 
 m5_ca1 <- function() {
-  data <- tiny_m5 |>
+  data <- m5::tiny_m5 |>
     filter(store_id == "CA_1") |>
     tsibble(index = date, key = c(item_id, dept_id, cat_id)) |>
     aggregate_key(cat_id / dept_id / item_id, value = sum(value))
@@ -54,7 +54,7 @@ m5_ca1 <- function() {
   fit_upper <- data |> 
     filter(date < as.Date("2016-04-01")) |> 
     hier_filter("upper") |>
-    model(base = SNAIVE(value, period = 7))
+    model(base = THETA(value))
   fit_bottom <- data |> 
     filter(date < as.Date("2016-04-01")) |> 
     hier_filter("bottom") |>
@@ -65,7 +65,7 @@ m5_ca1 <- function() {
 
 
 m5_foods1046 <- function() {
-  data <- tiny_m5 |>
+  data <- m5::tiny_m5 |>
     filter(item_id == "FOODS_1_046") |>
     tsibble(index = date, key = c(store_id, state_id)) |>
     aggregate_key(state_id / store_id, value = sum(value))
@@ -84,19 +84,19 @@ m5_foods1046 <- function() {
 
 
 m5_stores <- function() {
-  data <- tiny_m5 |> 
+  data <- m5::tiny_m5 |> 
     tsibble(index = date, key = c(item_id, store_id, state_id)) |>
     aggregate_key(state_id / store_id, value = sum(value))
   
   fit <- data |>
     filter(date < as.Date("2016-04-01")) |> 
-    model(base = ETS(value ~ trend("A") + season("A")))
+    model(base = SNAIVE(value, period = 7))
   return(fit)
 }
 
 
 pedestrian_all <- function() {
-  data <- pedestrian |>
+  data <- tsibble::pedestrian |>
     filter(Date_Time < as.Date("2015-04-01")) |>
     aggregate_key(Sensor, Count = sum(Count))
   
@@ -109,6 +109,16 @@ pedestrian_all <- function() {
 
   fit <- bind_rows(fit_upper, fit_bottom)
   return(fit)
+}
+
+carparts_all <- function(){
+  data <- monash_forecasting_repository(4656021) |> 
+    mutate(start_timestamp = yearmonth(start_timestamp)) |>
+    filter(series_name %in% paste0("T", 42 + 0:19)) |> 
+    filter(start_timestamp < yearmonth("2001 Oct")) |>
+    aggregate_key(series_name, value = sum(value))
+  fit <- data |> 
+    model(base = STATICNB(value))
 }
 
 
