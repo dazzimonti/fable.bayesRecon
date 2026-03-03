@@ -111,23 +111,70 @@ forecast.lst_bayesRecon_TDcond <- function(
 }
 
 
+#' Create a discrete PMF from distributions
+#'
+#' Converts a set of distributional objects into a list of discrete PMFs used by
+#' the top-down conditioning reconciliation. The function enforces nonnegative,
+#' integer support by truncating negative supports and rounding non-integer
+#' supports via sampling, then estimates the PMF up to the (1 - toll)
+#' quantile.
+#'
+#' @param dist A vector or list of `distributional` objects.
+#' @param negative_to_zero Logical, currently unused. Reserved for future use.
+#' @param toll Tail probability used to truncate the support when estimating the PMF.
+#' @param num_samples Number of samples used to round non-integer supports.
+#' @param alpha_smoothing Numeric, currently unused. Reserved for future use.
+#'
+#' @return A list of numeric vectors, one PMF per input distribution.
+#'
+#' @importFrom distributional dist_truncated generate support dist_inflated cdf
+#' @importFrom vctrs field
+#' @importFrom purrr map2 pmap
+#' @importFrom stats density quantile
+#'
+#' @keywords internal
 make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, num_samples = 1e04, alpha_smoothing = 1e-9){
+  wm <- character(0)
   supp <- dist |> support()
-  # Identify the negatively supported distirbutions and truncate them at zero
+  # Identify the negatively supported distributions
   neg_lb <- supp |> field("lim") |> vapply(\(x) x[1], numeric(1)) < 0
   if (any(neg_lb)){
-    warning("Negative support corrected via truncation")
-    dist[neg_lb] <- dist[neg_lb] |> dist_truncated(0, Inf)
+    if (negative_to_zero){
+      # Identify the mass below zero and make the distribution zero-inflated
+      wm <- c(wm, "Negative support corrected via zero-inflation.")
+      cdfzero <- dist[neg_lb] |> cdf(-toll)
+      dist[neg_lb] <- purrr::map2(dist[neg_lb], cdfzero, 
+                               \(d, p0) d |> 
+                                 dist_truncated(0, Inf) |> 
+                                 dist_inflated(p0, 0))
+    } else {
+      # Simply truncate the distribution
+      wm <- c(wm, "Negative support corrected via truncation.")
+      dist[neg_lb] <- dist[neg_lb] |> dist_truncated(0, Inf)
+    }
   }
-  #selec thigs withs support not in N0 or N+ and truncate them at zero
-  int_val <- supp |> format() |> names() %in% c("N0", "N+", "Z") 
-  if (!all(int_val)){
-    warning("Non-integer support corrected via rounding")
-    dist[!int_val] <- dist[!int_val] |> generate(num_samples) |> 
-      lapply(\(x) as.integer(x)) |> dist_sample()
+  # Identify real-supported distributions
+  int_val <- supp |> format() |> names() %in% c("N0", "N+", "Z")
+  if (any(!int_val)){
+    wm <- c(wm, "Non-integer support obtained via cdf rounding.")
   }
-  # Compute the pmf up to a certain quantile to bound it
-  M <- dist |> quantile(1 - toll)
-  pmf <- map2(dist, M, ~ density(.x, 0:.y)[[1]])
+  # Find the upper value for the pmf esitimation
+  M <- dist |> quantile(1 - toll) |> ceiling() |> as.numeric()
+  pmf <- pmap(list(d = dist, is_int = int_val, m = M), \(d, is_int, m) {
+      if (!is_int) {
+        # Approximate the pmf via cdf differences
+        mass <- d |> cdf(0:m + 0.5) |> 
+          (\(x) as.numeric(unlist(x, recursive = TRUE, use.names = FALSE)))() |>
+          (\(x) diff(c(0, x)))()
+      } else {
+        # Simply estimate the pmf
+        mass <- d |> density(0:m) |> 
+          (\(x) as.numeric(unlist(x, recursive = TRUE, use.names = FALSE)))()
+      }
+      return(mass)
+    }
+  )
+  # Display warnings if needed
+  if (length(wm) > 0) warning(paste(unique(wm), collapse = " "), call. = FALSE)
   return(pmf)
 }
