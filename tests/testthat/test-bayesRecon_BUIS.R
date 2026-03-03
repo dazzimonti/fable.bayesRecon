@@ -25,7 +25,7 @@ test_that("bayesRecon_BUIS runs reconciliation and produces valid output", {
   
   # Test 3
   expect_error({
-    fc3 <- m5_stores() |>
+    fc3 <- m5_foods1046() |>
       fabletools::reconcile(buis = bayesRecon_BUIS(base)) |>
       fabletools::forecast(h = 28) |> 
       dplyr::filter(.model == "buis")
@@ -57,4 +57,11 @@ test_that("bayesRecon_BUIS runs reconciliation and produces valid output", {
   expect_true(all(distr1 |> family() == "sample"))
   expect_true(all(distr2 |> family() == "sample"))
   expect_true(all(distr3 |> family() == "sample"))
+  
+  # Check that the model fails when bottom are continuous but uppers are not
+  expect_error({
+    fc4 <- carparts_5() |>
+      fabletools::reconcile(buis = bayesRecon_BUIS(base)) |>
+      fabletools::forecast(h = 12)
+  })
 })

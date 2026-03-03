@@ -20,9 +20,9 @@ bayesRecon_BUIS <- function(models) {
 #' aggregation, and reweights samples according to upper-level forecast densities.
 #'
 #' @importFrom fabletools forecast distribution_var
-#' @importFrom distributional generate dist_sample
+#' @importFrom distributional generate dist_sample support
 #' @importFrom stats density
-#' @importFrom bayesRecon .check_hierarchical
+#' @importFrom bayesRecon .check_hierarchical .core_reconc_BUIS .get_HG
 #'
 #' @method forecast lst_bayesRecon_BUIS
 #'
@@ -47,8 +47,8 @@ forecast.lst_bayesRecon_BUIS <- function(
   # Take models from fabletools, and prepare for BUIS
   # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
   S <- get_S(key_data)
-  core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
-  get_HG <- getFromNamespace(".get_HG", "bayesRecon")
+  # core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
+  # get_HG <- getFromNamespace(".get_HG", "bayesRecon")
   
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
   fc <- NextMethod()
@@ -66,6 +66,16 @@ forecast.lst_bayesRecon_BUIS <- function(
   btm_ts <- hier$btm_ts
   btm_idx <- hier$btm_idx
   
+  # Check that if bottom are continuous, then all forecasts are
+  for (h in seq_along(base_forecast_h)) {
+    supp <- base_forecast_h[[h]] |> support()
+    if (
+      any(supp[btm_ts] |> format() |> names() %in% c("R", "R+")) && 
+        !all(supp[upr_ts] |> format() |> names() %in% c("R", "R+"))
+      ) {
+      stop("If bottom forecasts are continuous, upper forecasts must be continuous too.")
+    }
+  }
   
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
@@ -91,7 +101,7 @@ forecast.lst_bayesRecon_BUIS <- function(
       in_typeG = NULL
       distr_G  = NULL
     }else{
-      get_HG.res = get_HG(A, upper_fc, rep(0, n_upr), rep(0, n_upr))
+      get_HG.res = .get_HG(A, upper_fc, rep(0, n_upr), rep(0, n_upr))
       H = get_HG.res$H
       upp_base_H = get_HG.res$Hv
       G = get_HG.res$G
@@ -108,40 +118,15 @@ forecast.lst_bayesRecon_BUIS <- function(
       return(density(u, as.numeric(b))[[1L]])
     }
 
-    B = core_reconc_BUIS(A = A, H = H, G = G, B = B,
-                         upper_base_forecasts_H = upp_base_H,
-                         in_typeH = in_typeH, distr_H = distr_H,
-                         upper_base_forecasts_G = upp_base_G,
-                         in_typeG = in_typeG, distr_G = distr_G,
-                         .comp_w = .comp_w_distributional,
-                         suppress_warnings = FALSE)
+    B = .core_reconc_BUIS(A = A, H = H, G = G, B = B,
+                          upper_base_forecasts_H = upp_base_H,
+                          in_typeH = in_typeH, distr_H = distr_H,
+                          upper_base_forecasts_G = upp_base_G,
+                          in_typeG = in_typeG, distr_G = distr_G,
+                          .comp_w = .comp_w_distributional,
+                          suppress_warnings = FALSE)
 
-    # for (hi in 1:nrow(H)) {
-    #   c = H[hi,]
-    #   b_mask = (c != 0)
-    #   # Compute weights by evaluating the upper densities
-    #   # distributional needs a numeric to apply density to many values
-    #   weights = stats::density(upper_fc[hi], as.numeric(B %*% c))[[1L]]
-    #   # Make weights a matrix
-    #   weights <- matrix(weights, ncol = 1)
-
-    #   # Checks on weights are inherited from bayesRecon
-    #   check_weights.res = bayesRecon:::.check_weights(weights)
-    #   # TODO:  Ifs are commented, check if they work
-    #   # if (check_weights.res$warning & !suppress_warnings) {
-    #   #   warning_msg = check_weights.res$warning_msg
-    #   #   # add information to the warning message
-    #   #   upper_fromA_i = which(lapply(seq_len(nrow(A)), function(i) sum(abs(A[i,] - c))) == 0)
-    #   #   for (wmsg in warning_msg) {
-    #   #     wmsg = paste(wmsg, paste0("Check the upper forecast at index: ", upper_fromA_i,"."))
-    #   #     warning(wmsg)
-    #   #   }
-    #   # }
-    #   # if(check_weights.res$warning & (1 %in% check_weights.res$warning_code)){
-    #   #  next
-    #   # }
-    #   B[, b_mask] = bayesRecon:::.resample(B[, b_mask], weights)
-    # }
+    # Produce complete forecasts
     B = t(B)
     U = A %*% B
     Y_reconc = rbind(U, B)
@@ -149,25 +134,6 @@ forecast.lst_bayesRecon_BUIS <- function(
     dist_sample(split(Y_reconc, row(Y_reconc)))
     ### END REWRITE
   })
-
-  # Old code to extract from the models the mean and sd manually. 
-  # If we use distributional this is not needed
-  # fc_param <- lapply(fc_dist, distributional::parameters)
-  # fc_param <- lapply(fc_param, `names<-`, c("mean", "sd"))
-  # fc_param <- lapply(fc_param, dplyr::slice, 1L)
-
-  # fc_family <- lapply(fc_dist, family)
-
-  # res <- reconc_BUIS(
-  #   S[rowSums(S) > 1, , drop = FALSE],
-  #   c(fc_param[upr_ts], fc_param[btm_ts][btm_idx]),
-  #   in_type = "params",
-  #   distr = "gaussian"
-  # )
-
-  # split(res$reconciled_samples, row(res$reconciled_samples)) |>
-  #   lapply(list) |>
-  #   lapply(distributional::dist_sample)
 
   # Fable needs the horizon and models in a different format
   # Invert horizon <-> model. 
