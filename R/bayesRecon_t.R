@@ -2,7 +2,7 @@
 #'
 #' Creates an object for probabilistic forecast reconciliation using
 #' Student-t distributions. This method applies a multivariate Student-t model
-#' to both prior and posterior estimation, accounting for heavier tails than
+#' to posterior estimation, accounting for heavier tails than
 #' normal distributions.
 #'
 #' @param models A list of fitted models to reconcile.
@@ -24,10 +24,10 @@ bayesRecon_t <- function(models) {
 #' using a multivariate Student-t model with flexible prior/posterior specification.
 #'
 #' @importFrom fabletools forecast distribution_var
-#' @importFrom stats density
-#' @importFrom purrr map map2 map_dbl list_c reduce invoke
+#' @importFrom stats density family frequency
+#' @importFrom purrr map map_dbl map_int list_c reduce exec
 #' @importFrom vctrs vec_c vec_slice
-#' @importFrom bayesRecon .core_reconc_t schaferStrimmer_cov multi_log_score_optimization
+#' @importFrom bayesRecon .core_reconc_t schaferStrimmer_cov multi_log_score_optimization .compute_naive_cov
 #' @importFrom dplyr full_join
 #' @importFrom tsibble index_var
 #' @importFrom distributional dist_student_t
@@ -38,9 +38,6 @@ bayesRecon_t <- function(models) {
 #' @param key_data A keyed data frame from `fabletools`.
 #' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
 #' @param new_data Optional new data for forecasting (not currently used).
-#' @param prior Optional list with `$nu` and `$Psi` for prior specification.
-#' @param posterior Optional list with `$nu` and `$Psi` for posterior specification.
-#' @param l_shr Shrinkage intensity (0 to 1) applied to sample covariance (default: 1e-4).
 #' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
 #' @param ... Additional arguments passed to other methods.
 #'
@@ -52,9 +49,6 @@ forecast.lst_bayesRecon_t <- function(
     key_data,
     point_forecast = list(.mean = mean),
     new_data = NULL,
-    prior = NULL,
-    posterior = NULL,
-    l_shr = 1e-4,
     suppress_warnings = TRUE,
     ...
 ) {
@@ -68,7 +62,7 @@ forecast.lst_bayesRecon_t <- function(
   # Series of lapply to extract the parameters of the distribution
   fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
 
-  ## START OUR REWRITE OF bayesRecon_t WITH distirbutional
+  ## START OUR REWRITE OF bayesRecon_t WITH distributional
   hier <- get_hier(S, fc_dist)
   A <- hier$A
   base_forecast_h <- hier$base_forecast_h
@@ -77,14 +71,18 @@ forecast.lst_bayesRecon_t <- function(
   btm_idx <- hier$btm_idx
   n_tot <- hier$n_tot
 
+  # Check that base forecasts are Normal
   if (!all(map(base_forecast_h, family) |> list_c() == "normal")) {
     stop("t-reconciliation works under the assumption of Normal forecasts")
   }
   
-  # Compute the covariance matrix of the residuals
-  res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
-  covm_res <- crossprod(res) / nrow(res) 
-  covm_res <- (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))  
+  # Extrapolate additional arguments for prior/posterior specification
+  add_args <- list(...)
+  prior <- add_args$prior
+  posterior <- add_args$posterior
+  freq <- add_args$freq
+  criterion <- ifelse(is.null(add_args$criterion), "RSS", add_args$criterion)
+  l_shr <- ifelse(is.null(add_args$l_shr), 1e-04, add_args$l_shr)
   
   if (!is.null(posterior)) {
     # Try to get dirtly the posterior from the argument
@@ -98,8 +96,13 @@ forecast.lst_bayesRecon_t <- function(
       stop("Input error: posterior must be a list with entries nu and Psi")
     }
   } else {
+    # Compute the covariance matrix of the residuals
+    res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
+    covm_res <- crossprod(res) / nrow(res) 
+    covm_res <- (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))
+    
     if (!is.null(prior)) {
-      # Try to get dirty the prior from the argument
+      # Try to get directly the prior from the argument
       if (is.list(prior)) {
         nu_prior = prior$nu
         Psi_prior = prior$Psi
@@ -110,20 +113,21 @@ forecast.lst_bayesRecon_t <- function(
         stop("Input error: prior must be a list with entries nu and Psi")
       }
     } else {
-      # Compute the prior from observed data
-
-      # Obtain past observations in matrix format
+      # Compute the prior from observed data ; obtain them in matrix format
       obs = map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
       if(length(unique(map_dbl(obs, nrow))) > 1){
         # Join observed by index #199
         obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(res[[1]]))[,-1]))
       } else {
-        obs <- matrix(invoke(c, map(obs, `[[`, 2)), ncol = length(object))
+        obs <- matrix(exec(c, !!!map(obs, `[[`, 2)), ncol = length(object))
       }
-      # Compute the residuals of the naive
-      res_naive = diff(obs)
-      # TODO: handle seasonal naive (with diff(obs, freq))
-      covm_naive = schaferStrimmer_cov(res_naive)$shrink_cov
+      
+      # Identify the frequency and compute the residuals of the naive forecasts
+      if (is.null(freq)){
+        freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
+        freq <- ifelse(length(unique(freq)) == 1, unique(freq), 1)
+      }
+      covm_naive <- .compute_naive_cov(obs, freq = freq, criterion = criterion)
       
       # Identify optimal prior parameters via LOO-CV
       loo_cv = multi_log_score_optimization(res, covm_naive)
@@ -143,31 +147,18 @@ forecast.lst_bayesRecon_t <- function(
     out = .core_reconc_t(
       A = A,
       point_fc = point_fc,
-      Psi = Psi_post,
-      nu = nu_post,
+      Psi_post = Psi_post,
+      nu_post = nu_post,
       return_uppers = TRUE,
       return_parameters = FALSE,
       suppress_warnings = FALSE
     )
     
-    # Return simply a list of distirbutional: a multivariate-t for the upper and one for the bottom
-    # return(list(
-    #   distributional::dist_multivariate_t(
-    #     df = nu_tilde,
-    #     mu = list(u_tilde),
-    #     sigma = list(Sigma_tilde_U)
-    #   ),
-    #   distributional::dist_multivariate_t(
-    #     df = nu_tilde,
-    #     mu = list(b_tilde),
-    #     sigma = list(Sigma_tilde_B)
-    #   )))
-    
     # Return the distributional Student-t distribution
     return(dist_student_t(
       df = out$bottom_df,
       mu = c(out$upper_mean, out$bottom_mean),
-      # S: to check wheter the following has to be scaled through sqrt
+      # S: to check whether the following has to be scaled through sqrt
       sigma = sqrt(c(diag(out$upper_scale_matrix), diag(out$bottom_scale_matrix)))
     ))
   })
