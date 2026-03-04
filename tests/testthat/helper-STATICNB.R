@@ -1,21 +1,18 @@
-library(fabletools)
-library(tsibble)
-
 STATICNB <- function(formula, ...) {
-  staticnb_model <- new_model_class(
+  staticnb_model <- fabletools::new_model_class(
     "staticnb",
     train = train_staticnb,
-    specials = new_specials(),
+    specials = fabletools::new_specials(),
     check = all_tsbl_checks
   )
-  new_model_definition(staticnb_model, !!enquo(formula), ...)
+  fabletools::new_model_definition(staticnb_model, !!rlang::enquo(formula), ...)
 }
 
 train_staticnb <- function(.data, specials, ...) {
-  if (length(measured_vars(.data)) != 1) {
+  if (length(tsibble::measured_vars(.data)) != 1) {
     cli::cli_abort("Only univariate responses are supported by STATICNB.")
   }
-  y <- unclass(.data)[[measured_vars(.data)]]
+  y <- unclass(.data)[[tsibble::measured_vars(.data)]]
   mu <- mean(y, na.rm = TRUE)
   mu <- validate_mu(mu, context = "train")
 
@@ -68,7 +65,6 @@ validate_mu <- function(mu, context) {
 
 
 
-library(cli)
 check_gaps <- function(x) {
   if (any(tsibble::has_gaps(x)[[".gaps"]])) {
     cli::cli_abort(sprintf("%s contains implicit gaps in time. You should check your data and convert implicit gaps into explicit missing values using `tsibble::fill_gaps()` if required.", deparse(substitute(x))))
@@ -76,16 +72,16 @@ check_gaps <- function(x) {
 }
 
 check_regular <- function(x) {
-  if (!is_regular(x)) {
+  if (!tsibble::is_regular(x)) {
     cli::cli_abort(sprintf("%s is an irregular time series, which this model does not support. You should consider if your data can be made regular, and use `tsibble::update_tsibble(%s, regular = TRUE)` if appropriate.", deparse(substitute(x)), deparse(substitute(x))))
   }
 }
 
 check_ordered <- function(x) {
-  if (!is_ordered(x)) {
+  if (!tsibble::is_ordered(x)) {
     cli::cli_abort(sprintf(
       "%s is an unordered time series. To use this model, you first must sort the data in time order using `dplyr::arrange(%s, %s)`",
-      deparse(substitute(x)), paste(c(deparse(substitute(x)), key_vars(x)), collapse = ", "), index_var(x)
+      deparse(substitute(x)), paste(c(deparse(substitute(x)), tsibble::key_vars(x)), collapse = ", "), tsibble::index_var(x)
     ))
   }
 }
@@ -99,6 +95,6 @@ all_tsbl_checks <- function(.data) {
 }
 
 # Register S3 methods for STATICNB
-registerS3method("forecast", "staticnb", forecast.staticnb)
-registerS3method("fitted", "staticnb", fitted.staticnb)
-registerS3method("residuals", "staticnb", residuals.staticnb)
+base::registerS3method("forecast", "staticnb", forecast.staticnb)
+base::registerS3method("fitted", "staticnb", fitted.staticnb)
+base::registerS3method("residuals", "staticnb", residuals.staticnb)
