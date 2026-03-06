@@ -118,20 +118,17 @@ forecast.lst_bayesRecon_BUIS <- function(
       return(density(u, as.numeric(b))[[1L]])
     }
 
-    B = .core_reconc_BUIS(A = A, H = H, G = G, B = B,
-                          upper_base_forecasts_H = upp_base_H,
+    out = .core_reconc_BUIS(A = A, H = H, G = G, B = B,
+                          upper_base_fc_H = upp_base_H,
                           in_typeH = in_typeH, distr_H = distr_H,
-                          upper_base_forecasts_G = upp_base_G,
+                          upper_base_fc_G = upp_base_G,
                           in_typeG = in_typeG, distr_G = distr_G,
                           .comp_w = .comp_w_distributional,
-                          suppress_warnings = FALSE)
+                          return_upper = TRUE
+                          )
 
-    # Produce complete forecasts
-    B = t(B)
-    U = A %*% B
-    Y_reconc = rbind(U, B)
-
-    dist_sample(split(Y_reconc, row(Y_reconc)))
+    Y_reconc = rbind(out$upper_rec_samples, out$bottom_rec_samples)
+    return(dist_sample(split(Y_reconc, row(Y_reconc))))
     ### END REWRITE
   })
 

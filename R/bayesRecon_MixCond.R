@@ -22,8 +22,6 @@ bayesRecon_MixCond <- function(models) {
 #'
 #' @importFrom fabletools forecast distribution_var
 #' @importFrom distributional generate dist_sample
-#' @importFrom stats density
-#' @importFrom purrr map2
 #' @importFrom bayesRecon .core_reconc_MixCond schaferStrimmer_cov
 #'
 #' @method forecast lst_bayesRecon_MixCond
@@ -79,21 +77,20 @@ forecast.lst_bayesRecon_MixCond <- function(
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Save upper point forecast vector and bottom samples matrix
-    mu_u <- base_forecasts[seq_len(n_upr)] |> mean()
+    mean_upper <- base_forecasts[seq_len(n_upr)] |> mean()
     B <- base_forecasts[-seq_len(n_upr)] |> generate(times = n_samples) |> do.call(what=cbind)
     
     out <- .core_reconc_MixCond(
       A = A,
       B = B,
-      mu_u = mu_u,
-      Sigma_u = upr_covm,
+      mean_upper = mean_upper,
+      cov_upper = upr_covm,
       num_samples = n_samples,
-      return_type = "samples", 
-      suppress_warnings = FALSE
+      return_type = "samples"
     )
     
     # Return reconciled samples as a distributional object
-    Y_reconc = rbind(out$upper_reconciled$samples, out$bottom_reconciled$samples)
+    Y_reconc = rbind(out$upper_rec$samples, out$bottom_rec$samples)
     return(dist_sample(split(Y_reconc, row(Y_reconc))))
   })
   ###### END REWRITE

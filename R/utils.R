@@ -35,7 +35,6 @@ transpose_vec <- function(.l) {
 #' 
 #' @importFrom vctrs vec_c
 get_S <- function(key_data) {
-  build_key_data_smat <- getFromNamespace("build_key_data_smat", "fabletools")
   agg_data <- build_key_data_smat(key_data)
   S <- matrix(
     0L,
@@ -105,6 +104,9 @@ get_hier <- function(S, fc_dist){
 #' @return A list of updated forecast objects with reconciled distributions
 #'   and point forecasts inserted.
 #'
+#' @importFrom purrr map2
+#' @importFrom fabletools distribution_var
+#'
 #' @keywords internal
 #' @noRd
 get_output_fc <- function(fc, fc_dist, point_forecast){
@@ -135,8 +137,9 @@ get_output_fc <- function(fc, fc_dist, point_forecast){
 #' @param level Which level of residuals to return: "all", "upper", or "bottom".
 #'
 #' @return A numeric matrix of residuals with complete cases only.
-#' @importFrom purrr map map_dbl reduce invoke
+#' @importFrom purrr map map_dbl reduce exec
 #' @importFrom dplyr full_join
+#' @importFrom stats complete.cases residuals
 #' @importFrom tsibble index_var
 #' @keywords internal
 #' @noRd
@@ -150,7 +153,7 @@ get_residuals <- function(object, upr_ts, btm_ts, btm_idx, level=c("all","upper"
     # Join residuals by index #199
     res <- unname(as.matrix(reduce(res, full_join, by = index_var(res[[1]]))[,-1]))
   } else {
-    res <- matrix(invoke(c, map(res, `[[`, 2)), ncol = length(object))
+    res <- matrix(exec(c, !!!map(res, `[[`, 2)), ncol = length(object))
   }
   # select the level of residuals to return
   if (level == "upper") {
@@ -165,8 +168,10 @@ get_residuals <- function(object, upr_ts, btm_ts, btm_idx, level=c("all","upper"
 
 #' Copied from fabletools/R/reconciliation.R
 #' @importFrom vctrs vec_c vec_group_loc vec_match vec_rbind
+#' @importFrom fabletools is_aggregated
 #' @importFrom purrr map
 #' @importFrom tibble as_tibble
+#' @importFrom rlang abort is_empty
 #' @keywords internal
 #' @noRd
 build_key_data_smat <- function(x){

@@ -21,9 +21,8 @@ bayesRecon_TDcond <- function(models) {
 #' forecast.lst_bayesRecon_TDcond
 #' 
 #' @importFrom fabletools forecast distribution_var
-#' @importFrom distributional generate dist_sample dist_truncated support
+#' @importFrom distributional dist_sample dist_truncated support
 #' @importFrom stats density
-#' @importFrom purrr map2
 #' @importFrom vctrs field
 #' @importFrom bayesRecon .core_reconc_TDcond schaferStrimmer_cov
 #' 
@@ -79,22 +78,22 @@ forecast.lst_bayesRecon_TDcond <- function(
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Save upper point forecast and bottom PMF
-    mu_u <- base_forecasts[seq_len(n_upr)] |> mean()
+    mean_upper <- base_forecasts[seq_len(n_upr)] |> mean()
     L_pmf <- make_PMF(base_forecasts[-seq_len(n_upr)])
 
     # Apply the core function from bayesRecon
     out <- .core_reconc_TDcond(
       A = A,
-      mu_u = mu_u,
-      Sigma_u = upr_covm,
+      mean_upper = mean_upper,
+      cov_upper = upr_covm,
       L_pmf = L_pmf,
       num_samples =  n_samples,
       return_type = "samples", 
-      suppress_warnings = FALSE
+      min_fraction_samples_ok = .5
     )
     
     # Return reconciled samples as a distributional object
-    Y_reconc = rbind(out$upper_reconciled$samples, out$bottom_reconciled$samples)
+    Y_reconc = rbind(out$upper_rec$samples, out$bottom_rec$samples)
     return(dist_sample(split(Y_reconc, row(Y_reconc))))
   })
   # END REWRITE
@@ -127,7 +126,7 @@ forecast.lst_bayesRecon_TDcond <- function(
 #'
 #' @return A list of numeric vectors, one PMF per input distribution.
 #'
-#' @importFrom distributional dist_truncated generate support dist_inflated cdf
+#' @importFrom distributional dist_truncated support dist_inflated cdf
 #' @importFrom vctrs field
 #' @importFrom purrr map2 pmap
 #' @importFrom stats density quantile
@@ -143,10 +142,10 @@ make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, num_samples = 
       # Identify the mass below zero and make the distribution zero-inflated
       wm <- c(wm, "Negative support corrected via zero-inflation.")
       cdfzero <- dist[neg_lb] |> cdf(-toll)
-      dist[neg_lb] <- purrr::map2(dist[neg_lb], cdfzero, 
-                               \(d, p0) d |> 
-                                 dist_truncated(0, Inf) |> 
-                                 dist_inflated(p0, 0))
+      dist[neg_lb] <- map2(dist[neg_lb], cdfzero, 
+                           \(d, p0) d |> 
+                           dist_truncated(0, Inf) |> 
+                           dist_inflated(p0, 0))
     } else {
       # Simply truncate the distribution
       wm <- c(wm, "Negative support corrected via truncation.")

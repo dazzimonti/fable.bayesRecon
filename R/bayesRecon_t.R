@@ -24,10 +24,9 @@ bayesRecon_t <- function(models) {
 #' using a multivariate Student-t model with flexible prior/posterior specification.
 #'
 #' @importFrom fabletools forecast distribution_var
-#' @importFrom stats density family frequency
+#' @importFrom stats family frequency
 #' @importFrom purrr map map_dbl map_int list_c reduce exec
-#' @importFrom vctrs vec_c vec_slice
-#' @importFrom bayesRecon .core_reconc_t schaferStrimmer_cov multi_log_score_optimization .compute_naive_cov
+#' @importFrom bayesRecon .core_reconc_t multi_log_score_optimization .compute_naive_cov
 #' @importFrom dplyr full_join
 #' @importFrom tsibble index_var
 #' @importFrom distributional dist_student_t
@@ -85,7 +84,7 @@ forecast.lst_bayesRecon_t <- function(
   l_shr <- ifelse(is.null(add_args$l_shr), 1e-04, add_args$l_shr)
   
   if (!is.null(posterior)) {
-    # Try to get dirtly the posterior from the argument
+    # Try to get directly the posterior from the argument
     if (is.list(posterior)) {
       nu_post = posterior$nu
       Psi_post = posterior$Psi
@@ -143,23 +142,22 @@ forecast.lst_bayesRecon_t <- function(
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Extrapolate point forecast
-    point_fc = map_dbl(base_forecasts, mean)
+    base_fc_mean = map_dbl(base_forecasts, mean)
     out = .core_reconc_t(
       A = A,
-      point_fc = point_fc,
+      base_fc_mean = base_fc_mean,
       Psi_post = Psi_post,
       nu_post = nu_post,
-      return_uppers = TRUE,
-      return_parameters = FALSE,
-      suppress_warnings = FALSE
+      return_upper = TRUE,
+      return_parameters = FALSE
     )
     
     # Return the distributional Student-t distribution
     return(dist_student_t(
-      df = out$bottom_df,
-      mu = c(out$upper_mean, out$bottom_mean),
+      df = out$bottom_rec_df,
+      mu = c(out$upper_rec_mean, out$bottom_rec_mean),
       # S: to check whether the following has to be scaled through sqrt
-      sigma = sqrt(c(diag(out$upper_scale_matrix), diag(out$bottom_scale_matrix)))
+      sigma = sqrt(c(diag(out$upper_rec_scale_matrix), diag(out$bottom_rec_scale_matrix)))
     ))
   })
   # END REWRITE OF bayesRecon_t
