@@ -15,20 +15,25 @@
 )
 }
 \arguments{
-\item{object}{TODO}
+\item{object}{An object of class \code{lst_bayesRecon_MixCond} containing fitted models.}
 
-\item{key_data}{TODO}
+\item{key_data}{A keyed data frame from \code{fabletools}.}
 
-\item{point_forecast}{TODO}
+\item{point_forecast}{A list of point forecast functions (default: \code{list(.mean = mean)}).}
 
-\item{new_data}{TODO}
+\item{new_data}{Optional new data for forecasting (not currently used).}
 
-\item{n_samples}{number of samples for output distribution}
+\item{n_samples}{Number of samples to draw (default: 1000).}
 
-\item{suppress_warnings}{if TRUE warnings are not returned}
+\item{suppress_warnings}{If \code{TRUE}, suppress warnings from reconciliation.}
 
-\item{...}{extra parameters to be passed on.}
+\item{...}{Additional arguments passed to other methods.}
+}
+\value{
+A fable object with MixCond-reconciled distributions and point forecasts.
 }
 \description{
-takes a list of of models and returns a list of reconciled models
+Produces probabilistic forecasts reconciled via mixed hierarchy conditioning.
+This method handles mixed hierarchies (with cross-constraints) by applying
+conditioning-based reconciliation to draw samples from the reconciled distributions.
 }
