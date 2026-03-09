@@ -6,7 +6,7 @@ testthat::test_that("bayesRecon_TDcond runs reconciliation and produces valid ou
 
   # Test 1
   testthat::expect_no_error({
-    fc1 <- carparts_20() |>
+    fc1 <- carparts_100() |>
       fabletools::reconcile(tdcond = fable.bayesRecon::bayesRecon_TDcond(base)) |>
       fabletools::forecast(h = 6) |> 
       dplyr::filter(.model == "tdcond")
@@ -51,6 +51,7 @@ testthat::test_that("bayesRecon_TDcond runs reconciliation and produces valid ou
   testthat::expect_true(distr2 |> distributional::is_distribution())
   testthat::expect_true(distr3 |> distributional::is_distribution())
 })
+
 
 testthat::test_that("make_PMF creates valid PMFs and produces appropriate warnings", {
   

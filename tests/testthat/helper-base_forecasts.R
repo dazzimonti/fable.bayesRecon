@@ -15,7 +15,6 @@ hier_filter <- function(data, level = c("upper", "bottom")) {
 }
 
 
-
 tourism_melbourne <- function() {
   data <- tsibble::tourism |>
     dplyr::filter(Region == "Melbourne") |> 
@@ -106,14 +105,20 @@ pedestrian_all <- function() {
   return(fit)
 }
 
-carparts_20 <- function(){
+carparts_100 <- function(){
   data <- tsibbledata::monash_forecasting_repository(4656021) |> 
     dplyr::mutate(start_timestamp = tsibble::yearmonth(start_timestamp)) |>
-    dplyr::filter(series_name %in% paste0("T", 42 + 0:19)) |> 
+    dplyr::filter(series_name %in% paste0("T", 42 + 0:99)) |> 
     dplyr::filter(start_timestamp < tsibble::yearmonth("2001 Oct")) |>
     fabletools::aggregate_key(series_name, value = sum(value))
-  fit <- data |> 
+  
+  fit_upper <- data |>
+    hier_filter("upper") |>
+    fabletools::model(base = fable::SNAIVE(value, period = 12))
+  fit_bottom <- data |>
+    hier_filter("bottom") |>
     fabletools::model(base = STATICNB(value))
+  fit <- dplyr::bind_rows(fit_upper, fit_bottom)
 }
 
 
@@ -131,6 +136,29 @@ carparts_5 <- function(){
     hier_filter("bottom") |>
     fabletools::model(base = fable::SNAIVE(value, period = 12))
   fit <- dplyr::bind_rows(fit_upper, fit_bottom)
+  return(fit)
+}
+
+
+swiss_tourism_all <- function(){
+  data <- bayesRecon::swiss_tourism$ts[, -1, drop = FALSE] |>
+    tsibble::as_tsibble() |>
+    dplyr::rename(Month = index, Canton = key, Tourists = value) |> 
+    fabletools::aggregate_key(Canton, Tourists = sum(Tourists))
+  fit <- data |>
+    dplyr::filter(Month < tsibble::yearmonth("2024 Jan")) |> 
+    fabletools::model(base = fable::ETS(Tourists ~ trend("A") + season("A")))
+  return(fit)
+}
+
+extr_mkt_events_all <- function(){
+  data <- bayesRecon::extr_mkt_events[, -1, drop = FALSE] |>
+    tsibble::as_tsibble() |>
+    dplyr::rename(MarketDay = index, Sector = key, Events = value) |> 
+    fabletools::aggregate_key(Sector, Events = sum(Events))
+  fit <- data |>
+    dplyr::filter(MarketDay < 3499) |> 
+    fabletools::model(base = STATICNB(Events))
   return(fit)
 }
 

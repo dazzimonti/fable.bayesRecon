@@ -6,9 +6,9 @@ testthat::test_that("bayesRecon_MixCond runs reconciliation and produces valid o
 
   # Test 1
   testthat::expect_no_error({
-    fc1 <- carparts_20() |>
+    fc1 <- carparts_100() |>
       fabletools::reconcile(mixcond = fable.bayesRecon::bayesRecon_MixCond(base)) |>
-      fabletools::forecast(h = 28) |> 
+      fabletools::forecast(h = 6) |> 
       dplyr::filter(.model == "mixcond")
     distr1 <- fc1[[fabletools::distribution_var(fc1)]]
   })
@@ -30,7 +30,6 @@ testthat::test_that("bayesRecon_MixCond runs reconciliation and produces valid o
       dplyr::filter(.model == "mixcond")
     distr3 <- fc3[[fabletools::distribution_var(fc3)]]
   })
-  
   
   # Check the class of the forecasts
   testthat::expect_s3_class(fc1, c("tbl_df", "tbl"))

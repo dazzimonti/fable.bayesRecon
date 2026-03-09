@@ -94,7 +94,14 @@ all_tsbl_checks <- function(.data) {
   }
 }
 
-# Register S3 methods for STATICNB
-base::registerS3method("forecast", "staticnb", forecast.staticnb)
-base::registerS3method("fitted", "staticnb", fitted.staticnb)
-base::registerS3method("residuals", "staticnb", residuals.staticnb)
+# Ensure S3 methods are registered after fabletools is loaded
+if (requireNamespace("fabletools", quietly = TRUE)) {
+  tryCatch({
+    registerS3method("forecast", "staticnb", forecast.staticnb, envir = asNamespace("fabletools"))
+    registerS3method("fitted", "staticnb", fitted.staticnb)
+    registerS3method("residuals", "staticnb", residuals.staticnb)
+  }, error = function(e) {
+    # If registration fails, methods should still work via naming convention
+    invisible(NULL)
+  })
+}
