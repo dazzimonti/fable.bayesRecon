@@ -93,7 +93,7 @@ forecast.lst_bayesRecon_TDcond <- function(
     )
     
     # Return reconciled samples as a distributional object
-    Y_reconc = rbind(out$upper_rec$samples, out$bottom_rec$samples)
+    Y_reconc = rbind(out$upper_rec_samples, out$bottom_rec_samples)
     return(dist_sample(split(Y_reconc, row(Y_reconc))))
   })
   # END REWRITE
