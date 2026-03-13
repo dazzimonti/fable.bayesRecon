@@ -30,8 +30,18 @@ Imports:
     vctrs,
     distributional,
     dplyr,
-    fable,
-    tsibble
+    tsibble,
+    tibble,
+    rlang
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    cli,
+    fable,
+    tsibbledata,
+    ggplot2,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3
+Depends: 
+    R (>= 4.1)
