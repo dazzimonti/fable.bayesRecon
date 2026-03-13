@@ -1,8 +1,9 @@
 ---
-title: "fable.bayesRecon"
+title: "How to reconcile forecasts with fable.bayesRecon"
 output: rmarkdown::html_vignette
+bibliography: references.bib
 vignette: >
-  %\VignetteIndexEntry{Swiss Tourism with bayesRecon_t}
+  %\VignetteIndexEntry{How to reconcile forecasts with fable.bayesRecon}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoded{UTF-8}
 ---
@@ -25,8 +26,10 @@ kable <- function(x, ...) {
 
 ## Introduction
 
-This vignette demonstrates how to use reconciliation methods from the `fable.bayesRecon` package.
-In particular, we will apply the `bayesRecon_t()` function to the `swiss_tourism` dataset, which contains monthly counts of tourists in various cantons of Switzerland.
+This vignette shows how to use the reconciliation methods implemented in the `fable.bayesRecon` package.
+In particular, we will apply t-Rec method [@carrara2025] to the `swiss_tourism` dataset, which contains monthly counts of tourists in various cantons of Switzerland. 
+
+The method t-Rec is implemented in the function `bayesRecon_t()`, which can be used within the `reconcile()` function of `fabletools` to specify the reconciliation strategy.
 
 First, we load the required packages:
 
@@ -43,9 +46,9 @@ library(ggplot2)
 
 ## Data preparation
 
-First, we need to import the data in the tsibble format. To do so, we follow these steps:
+Let's import the data in the tsibble format. To do so, we follow these steps:
 
-1. Load the `swiss_tourism` dataset from the `bayesRecon` package.
+1. Load the `swiss_tourism` dataset from the `bayesRecon` package. This is a `mts` (multivariate time series) object. 
 2. Take the `ts` component of the dataset, which contains the time series data.
 3. Drop the first column, which contains the aggregated data for all cantons; it will be reconstructed later.
 4. Convert it to a tsibble format using `as_tsibble()`.
@@ -63,29 +66,29 @@ data <- swiss_tourism$ts[, -1, drop = FALSE] |>
 data |> head(5) |> kable()
 ```
 
-The time series obtained in this way are stacked vertically, with a column standing fot the time index (`Month`),  one for the grouping variable (`Canton`), and one for the values(`Tourists`).
+The time series obtained in this way are stacked vertically, with a column standing for the time index (`Month`),  one for the grouping variable (`Canton`), and one for the values(`Tourists`).
 However, `fabletools` allows to handle more complex hierarchies with more grouping variables.
 Aggregated time series have their `Canton` value set to `<aggregated>`.
 
 
 ## Models fitting
 
-Before applying forecast reconciliation, we need to fit base models to the data:
-We remove from each time series the last 12 observations, which will be used as set, using the `filter()` function and the `yearmonth()` format to specify the cutoff date. 
-This allows us to evaluate the performance of the reconciliation method on the holdout set.
-For base forecasts, we use an ETS model with additive trend and seasonality, with the `ETS()` function.
+We start by removing from each time series the last 12 observations, which will be used as test set, using the `filter()` function and the `yearmonth()` format to specify the cutoff date. This allows us to evaluate the performance of the reconciliation method on the holdout set.
 
-To 
+Then, we fit a base forecasting model to the data, then we will reconcile the results. For base forecasts, we use an ETS model with additive trend and seasonality, with the `ETS()` function.
 
 ```{r fit}
 fit <- data |>
-  filter(Month < yearmonth("2024 Feb")) |>
-  model(base = ETS(Tourists ~ trend("A") + season("A"))) |>
-  reconcile(t = bayesRecon_t(base))
+  filter(Month < yearmonth("2024 Feb")) |>                  # Remove test set
+  model(base = ETS(Tourists ~ trend("A") + season("A"))) |> # fit ETS model
+  reconcile(t = bayesRecon_t(base),
+            mint = min_trace(base))                         # Reconcile with t-Rec
 
 fit |> head(5) |> kable()
 ```
 **NOTA: vogliamo modificare qualocsa in modo tale che la classe sia qualcosa come `reconc_t`?**
+**Direi che va bene com'è adesso: l'oggetto interno dentro fit è una classe `lst_bayesRecon_t` che e' l'equivalente di `lst_mint_mdl` per mint. quando visualizzi entrambi gli oggetti fa vedere la stessa cosa.**
+
 
 During this step, base forecasts are fitted, but predictions are not generated yet.
 Thus, the specification of the reconciliation strategy here is only used to set up the model.
@@ -163,3 +166,6 @@ fc |>
   labs(title = paste("Canton Luzern"), y = "Tourists", x = NULL) +
   theme_minimal()
 ```
+
+# References
+<div id="refs"></div>
