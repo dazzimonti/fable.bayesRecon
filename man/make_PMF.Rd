@@ -4,13 +4,7 @@
 \alias{make_PMF}
 \title{Create a discrete PMF from distributions}
 \usage{
-make_PMF(
-  dist,
-  negative_to_zero = FALSE,
-  toll = 1e-09,
-  num_samples = 10000,
-  alpha_smoothing = 1e-09
-)
+make_PMF(dist, negative_to_zero = FALSE, toll = 1e-09, alpha_smoothing = 1e-09)
 }
 \arguments{
 \item{dist}{A vector or list of \code{distributional} objects.}
@@ -18,8 +12,6 @@ make_PMF(
 \item{negative_to_zero}{Logical, currently unused. Reserved for future use.}
 
 \item{toll}{Tail probability used to truncate the support when estimating the PMF.}
-
-\item{num_samples}{Number of samples used to round non-integer supports.}
 
 \item{alpha_smoothing}{Numeric, currently unused. Reserved for future use.}
 }

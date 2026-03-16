@@ -89,7 +89,8 @@ forecast.lst_bayesRecon_TDcond <- function(
       L_pmf = L_pmf,
       num_samples =  n_samples,
       return_type = "samples", 
-      min_fraction_samples_ok = .5
+      min_fraction_samples_ok = .5,
+      suppress_warnings = suppress_warnings
     )
     
     # Return reconciled samples as a distributional object

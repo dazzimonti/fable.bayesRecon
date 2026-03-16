@@ -87,9 +87,6 @@ forecast.lst_bayesRecon_BUIS <- function(
     # sample from bottom fc and make it a matrix
     B <- bottom_fc |> generate(times = n_samples) |> do.call(what=cbind)
 
-    # TODO: BUIS CURRENTLY IMPLEMENTED ONLY for hierarchies!
-    # H, G
-    # browser()
     is.hier = .check_hierarchical(A)
     if(is.hier){
       H <- A
