@@ -158,13 +158,13 @@ fc |>
 
 ```{r plot-canton2, fig.width=7, fig.height=4}
 # Second canton
-fc |>
+ggsave('plt.png', fc |>
   filter(Canton == "Luzern") |>
   autoplot(data |> filter(Month >= yearmonth("2022 Jan"),
                                  Canton == "Luzern"),
            level = 80) +
   labs(title = paste("Canton Luzern"), y = "Tourists", x = NULL) +
-  theme_minimal()
+  theme_minimal())
 ```
 
 # References

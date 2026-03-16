@@ -98,7 +98,7 @@ forecast.lst_bayesRecon_t <- function(
     # Compute the covariance matrix of the residuals
     res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
     covm_res <- crossprod(res) / nrow(res) 
-    covm_res <- (1 - l_shr)*covm_res + l_shr*diag(diag(covm_res))
+    R1 <- cov2cor(covm_res)
     
     if (!is.null(prior)) {
       # Try to get directly the prior from the argument
@@ -133,13 +133,19 @@ forecast.lst_bayesRecon_t <- function(
       nu_prior = loo_cv$optimal_nu
       Psi_prior = (nu_prior - n_tot - 1) * covm_naive
     }
-    # Compute posterior parameters
-    Psi_post = Psi_prior + nrow(res) * covm_res
-    nu_post = nu_prior + nrow(res)
   }
 
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
+    
+    # Compute posterior parameters if they are not directly specified
+    if (exists("R1")) {
+      var_h <- distributional::variance(base_forecasts)
+      W_h <- diag(sqrt(var_h))%*%R1%*%t(diag(sqrt(var_h)))
+      W_h <- (1 - l_shr)*W_h + l_shr*diag(diag(W_h))
+      Psi_post = Psi_prior + nrow(res) * W_h
+      nu_post = nu_prior + nrow(res)
+    }
     
     # Extrapolate point forecast
     base_fc_mean = map_dbl(base_forecasts, mean)
