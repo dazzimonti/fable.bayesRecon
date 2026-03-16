@@ -143,7 +143,8 @@ get_output_fc <- function(fc, fc_dist, point_forecast){
 #' @importFrom tsibble index_var
 #' @keywords internal
 #' @noRd
-get_residuals <- function(object, upr_ts, btm_ts, btm_idx, level=c("all","upper","bottom")){
+get_residuals <- function(object, upr_ts, btm_ts, btm_idx, n_upr, 
+                          level=c("all","upper","bottom")){
   level <- match.arg(level)
   # Compute sample covariance
   res <- map(
@@ -157,9 +158,9 @@ get_residuals <- function(object, upr_ts, btm_ts, btm_idx, level=c("all","upper"
   }
   # select the level of residuals to return
   if (level == "upper") {
-    res <- res[, upr_ts, drop = FALSE]
+    res <- res[, seq_len(n_upr), drop = FALSE]
   } else if (level == "bottom") {
-    res <- res[, btm_ts[btm_idx], drop = FALSE]
+    res <- res[, -seq_len(n_upr), drop = FALSE]
   }
   # Drop lines with NAs
   res <- res[complete.cases(res), , drop = FALSE]

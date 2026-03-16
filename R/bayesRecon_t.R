@@ -66,6 +66,7 @@ forecast.lst_bayesRecon_t <- function(
   upr_ts <- hier$upr_ts
   btm_ts <- hier$btm_ts
   btm_idx <- hier$btm_idx
+  n_upr <- hier$n_upr
   n_tot <- hier$n_tot
 
   # Check that base forecasts are Normal
@@ -97,7 +98,7 @@ forecast.lst_bayesRecon_t <- function(
     }
   } else {
     # Compute the covariance matrix of the residuals
-    res <- get_residuals(object, upr_ts, btm_ts, btm_idx)
+    res <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr)
     covm_res <- crossprod(res) / nrow(res) 
     R1 <- cov2cor(covm_res)
     
@@ -117,12 +118,13 @@ forecast.lst_bayesRecon_t <- function(
       obs = map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
       if(length(unique(map_dbl(obs, nrow))) > 1){
         # Join observed by index #199
-        obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(res[[1]]))[,-1]))
+        obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(obs[[1]]))[,-1]))
       } else {
         obs <- matrix(exec(c, !!!map(obs, `[[`, 2)), ncol = length(object))
       }
       
       # Identify the frequency and compute the residuals of the naive forecasts
+      browser()
       if (is.null(freq)){
         freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
         freq <- if (length(unique(freq)) == 1) unique(freq) else 1

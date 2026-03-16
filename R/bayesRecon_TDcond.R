@@ -66,8 +66,8 @@ forecast.lst_bayesRecon_TDcond <- function(
   btm_idx <- hier$btm_idx
   n_upr <- hier$n_upr
   
-  # Compute upper sample covariance, drop rows containing nans
-  res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, "upper")
+  # Compute upper sample covariance, drop rows containing NANs
+  res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr, "upper")
   if (n_upr == 1){
     upr_covm <- matrix(crossprod(res_upr)/nrow(res_upr))
   } else {
