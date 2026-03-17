@@ -10,8 +10,9 @@
 #' @return An object of class `lst_bayesRecon_MixCond`.
 #'
 #' @export
-bayesRecon_MixCond <- function(models) {
-  structure(models, class = c("lst_bayesRecon_MixCond", "lst_mdl", "list"))
+bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
+  structure(models, class = c("lst_bayesRecon_MixCond", "lst_mdl", "list"),
+            n_samples = n_samples, suppress_warnings = suppress_warnings)
 }
 
 #' forecast.lst_bayesRecon_MixCond
@@ -42,8 +43,6 @@ forecast.lst_bayesRecon_MixCond <- function(
   key_data,
   point_forecast = list(.mean = mean),
   new_data = NULL,
-  n_samples = 1000,
-  suppress_warnings = TRUE,
   ...
 ) {
   # Take models from fabletools, and prepare for BUIS
@@ -64,6 +63,10 @@ forecast.lst_bayesRecon_MixCond <- function(
   btm_ts <- hier$btm_ts
   btm_idx <- hier$btm_idx
   n_upr <- hier$n_upr
+  
+  # Extrapolate additional parameters from the object attributes
+  n_samples <- attr(object, "n_samples")
+  suppress_warnings <- attr(object, "suppress_warnings")
   
   # Compute upper sample covariance, drop rows containing nans
   res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr, "upper")

@@ -13,9 +13,10 @@
 #' @return An object of class `lst_bayesRecon_TDcond`.
 #'
 #' @export
-bayesRecon_TDcond <- function(models) {
+bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
   # For this I need an explanation
-  structure(models, class = c("lst_bayesRecon_TDcond", "lst_mdl", "list"))
+  structure(models, class = c("lst_bayesRecon_TDcond", "lst_mdl", "list"),
+            n_samples = n_samples, suppress_warnings = suppress_warnings)
 }
 
 #' forecast.lst_bayesRecon_TDcond
@@ -43,8 +44,6 @@ forecast.lst_bayesRecon_TDcond <- function(
     key_data,
     point_forecast = list(.mean = mean),
     new_data = NULL,
-    n_samples = 1000,
-    suppress_warnings = TRUE,
     ...
 ) {
   # Take models from fabletools, and prepare for BUIS
@@ -65,6 +64,10 @@ forecast.lst_bayesRecon_TDcond <- function(
   btm_ts <- hier$btm_ts
   btm_idx <- hier$btm_idx
   n_upr <- hier$n_upr
+  
+  # Extract parameters from the object attributes
+  n_samples <- attr(object, "n_samples")
+  suppress_warnings <- attr(object, "suppress_warnings")
   
   # Compute upper sample covariance, drop rows containing NANs
   res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr, "upper")

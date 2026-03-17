@@ -7,7 +7,8 @@ testthat::test_that("bayesRecon_MixCond runs reconciliation and produces valid o
   # Test 1
   testthat::expect_no_error({
     fc1 <- carparts_100() |>
-      fabletools::reconcile(mixcond = fable.bayesRecon::bayesRecon_MixCond(base)) |>
+      fabletools::reconcile(mixcond = fable.bayesRecon::bayesRecon_MixCond(base, 
+                                                                           n_samples = 500)) |>
       fabletools::forecast(h = 6) |> 
       dplyr::filter(.model == "mixcond")
     distr1 <- fc1[[fabletools::distribution_var(fc1)]]
@@ -25,7 +26,8 @@ testthat::test_that("bayesRecon_MixCond runs reconciliation and produces valid o
   # Test 3
   testthat::expect_no_error({
     fc3 <- pedestrian_all() |>
-      fabletools::reconcile(mixcond = fable.bayesRecon::bayesRecon_MixCond(base)) |>
+      fabletools::reconcile(mixcond = fable.bayesRecon::bayesRecon_MixCond(base, 
+                                                                           n_samples = 2000)) |>
       fabletools::forecast(h = "24 hours") |> 
       dplyr::filter(.model == "mixcond")
     distr3 <- fc3[[fabletools::distribution_var(fc3)]]

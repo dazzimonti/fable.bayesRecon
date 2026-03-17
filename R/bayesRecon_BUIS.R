@@ -8,9 +8,10 @@
 #' @return An object of class `lst_bayesRecon_BUIS`.
 #'
 #' @export
-bayesRecon_BUIS <- function(models) {
+bayesRecon_BUIS <- function(models, n_samples = 1000) {
   # For this I need an explanation
-  structure(models, class = c("lst_bayesRecon_BUIS", "lst_mdl", "list"))
+  structure(models, class = c("lst_bayesRecon_BUIS", "lst_mdl", "list"),
+            n_samples = n_samples)
 }
 
 #' forecast.lst_bayesRecon_BUIS
@@ -41,7 +42,6 @@ forecast.lst_bayesRecon_BUIS <- function(
   key_data,
   point_forecast = list(.mean = mean),
   new_data = NULL,
-  n_samples = 1000,
   ...
 ) {
   # Take models from fabletools, and prepare for BUIS
@@ -76,6 +76,9 @@ forecast.lst_bayesRecon_BUIS <- function(
       stop("If bottom forecasts are continuous, upper forecasts must be continuous too.")
     }
   }
+  
+  # Get a core parameter from the object attributes
+  n_samples <- attr(object, "n_samples")
   
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {

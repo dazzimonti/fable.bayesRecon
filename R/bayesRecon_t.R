@@ -13,8 +13,9 @@
 #'
 #' @examples
 #' # bayesRecon_t(base_models)
-bayesRecon_t <- function(models) {
-  structure(models, class = c("lst_bayesRecon_t", "lst_mdl", "list"))
+bayesRecon_t <- function(models, ...) {
+  structure(models, class = c("lst_bayesRecon_t", "lst_mdl", "list"),
+            ...)
 }
 
 #' forecast.lst_bayesRecon_t
@@ -74,14 +75,12 @@ forecast.lst_bayesRecon_t <- function(
     stop("t-reconciliation works under the assumption of Normal forecasts")
   }
   
-  # Extrapolate additional arguments for prior/posterior specification
-  add_args <- list(...)
-  prior <- add_args$prior
-  posterior <- add_args$posterior
-  freq <- add_args$freq
-  criterion <- add_args$criterion
-  l_shr <- add_args$l_shr
-  # If not specified, set default values for criterion and l_shr
+  # Extract additional parameters specified as attributes 
+  prior <- attr(object, "prior")
+  posterior <- attr(object, "posterior")
+  freq <- attr(object, "freq")
+  criterion <- attr(object, "criterion")
+  l_shr <- attr(object, "l_shr")
   if (is.null(criterion)) criterion <- "RSS"
   if (is.null(l_shr)) l_shr <- 1e-04
   
@@ -124,7 +123,6 @@ forecast.lst_bayesRecon_t <- function(
       }
       
       # Identify the frequency and compute the residuals of the naive forecasts
-      browser()
       if (is.null(freq)){
         freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
         freq <- if (length(unique(freq)) == 1) unique(freq) else 1

@@ -7,7 +7,8 @@ testthat::test_that("bayesRecon_TDcond runs reconciliation and produces valid ou
   # Test 1
   testthat::expect_no_error({
     fc1 <- carparts_100() |>
-      fabletools::reconcile(tdcond = fable.bayesRecon::bayesRecon_TDcond(base)) |>
+      fabletools::reconcile(tdcond = fable.bayesRecon::bayesRecon_TDcond(base, 
+                                                                         n_samples = 500)) |>
       fabletools::forecast(h = 6) |> 
       dplyr::filter(.model == "tdcond")
     distr1 <- fc1[[fabletools::distribution_var(fc1)]]
@@ -16,7 +17,8 @@ testthat::test_that("bayesRecon_TDcond runs reconciliation and produces valid ou
   # Test 2
   testthat::expect_no_error({
     fc2 <- m5_foods1046() |>
-      fabletools::reconcile(tdcond = fable.bayesRecon::bayesRecon_TDcond(base)) |>
+      fabletools::reconcile(tdcond = fable.bayesRecon::bayesRecon_TDcond(base, 
+                                                                         n_samples = 2000)) |>
       fabletools::forecast(h = 28) |> 
       dplyr::filter(.model == "tdcond")
     distr2 <- fc2[[fabletools::distribution_var(fc2)]]

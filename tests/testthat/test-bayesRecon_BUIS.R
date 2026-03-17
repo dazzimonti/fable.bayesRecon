@@ -26,7 +26,8 @@ testthat::test_that("bayesRecon_BUIS runs reconciliation and produces valid outp
   # Test 3
   testthat::expect_no_error({
     fc3 <- m5_foods1046() |>
-      fabletools::reconcile(buis = fable.bayesRecon::bayesRecon_BUIS(base)) |>
+      fabletools::reconcile(buis = fable.bayesRecon::bayesRecon_BUIS(base, 
+                                                                     n_samples = 500)) |>
       fabletools::forecast(h = 28) |> 
       dplyr::filter(.model == "buis")
     distr3 <- fc3[[fabletools::distribution_var(fc3)]]
@@ -35,7 +36,8 @@ testthat::test_that("bayesRecon_BUIS runs reconciliation and produces valid outp
   # Test 4
   testthat::expect_no_error({
     fc4 <- swiss_tourism_all() |>
-      fabletools::reconcile(buis = fable.bayesRecon::bayesRecon_BUIS(base)) |>
+      fabletools::reconcile(buis = fable.bayesRecon::bayesRecon_BUIS(base,
+                                                                     n_samples = 2000) )|>
       fabletools::forecast(h = 12) |> 
       dplyr::filter(.model == "buis")
     distr4 <- fc4[[fabletools::distribution_var(fc4)]]
