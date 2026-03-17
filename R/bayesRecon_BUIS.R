@@ -1,15 +1,29 @@
-#' BUIS for Probabilistic Reconciliation of forecasts via conditioning
+#' BUIS for probabilistic reconciliation of forecasts via conditioning
+#' 
+#' @description
 #'
-#' Uses the Bottom-Up Importance Sampling algorithm to draw samples from the reconciled
-#' forecast distribution, obtained via conditioning.
+#' Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within 
+#' `reconcile()`. The method uses the Bottom-Up Importance Sampling algorithm 
+#' to draw samples from the reconciled forecast distribution, obtained via conditioning.
+#' Reconciliation is performed when`forecast()` is called on the resulting model.
+#' Marginal reconciled forecasts follow a sample distribution.
 #'
 #' @param models A list of fitted models to reconcile.
+#' @param n_samples Number of samples to draw from the reconciled distribution.
 #'
 #' @return An object of class `lst_bayesRecon_BUIS`.
 #'
+#' @references
+#' Zambon, L., Azzimonti, D. & Corani, G. (2024).
+#' *Efficient probabilistic reconciliation of forecasts for real-valued and count time series*.
+#' Statistics and Computing 34 (1), 21.
+#' \doi{10.1007/s11222-023-10343-y}.
+#'
+#' @seealso
+#' [reconc_gaussian()]
+#'
 #' @export
 bayesRecon_BUIS <- function(models, n_samples = 1000) {
-  # For this I need an explanation
   structure(models, class = c("lst_bayesRecon_BUIS", "lst_mdl", "list"),
             n_samples = n_samples)
 }
@@ -31,7 +45,6 @@ bayesRecon_BUIS <- function(models, n_samples = 1000) {
 #' @param key_data A keyed data frame from `fabletools`.
 #' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
 #' @param new_data Optional new data for forecasting (not currently used).
-#' @param n_samples Number of samples to draw from bottom distributions (default: 1000).
 #' @param ... Additional arguments passed to other methods.
 #'
 #' @return A fable object with BUIS-reconciled distributions and point forecasts.

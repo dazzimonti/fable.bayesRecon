@@ -1,25 +1,16 @@
-#' @title Probabilistic forecast reconciliation of mixed hierarchies via top-down conditioning
-#'
-#' @description
-#'
-#' Uses the top-down conditioning algorithm to draw samples from the reconciled
-#' forecast distribution. Reconciliation is performed in two steps: 
-#' first, the upper base forecasts are reconciled via conditioning, 
-#' using only the hierarchical constraints between the upper variables; then,
-#' the bottom distributions are updated via a probabilistic top-down procedure.
-#' 
-#' @param models A list of fitted models to reconcile.
-#'
-#' @return An object of class `lst_bayesRecon_TDcond`.
+#' @rdname Mixed_reconciliation
 #'
 #' @export
 bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
-  # For this I need an explanation
   structure(models, class = c("lst_bayesRecon_TDcond", "lst_mdl", "list"),
             n_samples = n_samples, suppress_warnings = suppress_warnings)
 }
 
 #' forecast.lst_bayesRecon_TDcond
+#' 
+#' Produces probabilistic forecasts reconciled via top-down conditioning.
+#' Upper base forecasts are reconciled via conditioning. The recondiled
+#' upper forecasts are then propagate to bottom via probabilisitc top-down.
 #' 
 #' @importFrom fabletools forecast distribution_var
 #' @importFrom distributional dist_sample dist_truncated support
@@ -29,12 +20,11 @@ bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE
 #' 
 #' @method forecast lst_bayesRecon_TDcond 
 #' 
-#' @param object TODO
-#' @param key_data TODO
-#' @param point_forecast TODO 
-#' @param new_data TODO
-#' @param n_samples number of samples for output distribution
-#' @param suppress_warnings if TRUE warnings are not returned
+#' @param object An object of class `lst_bayesRecon_MixCond` containing fitted models.
+#' @param key_data A keyed data frame from `fabletools`.
+#' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
+#' @param new_data Optional new data for forecasting (not currently used).
+#' @param ... Additional arguments passed to other methods.
 #' @param ... extra parameters to be passed on.
 #' 
 #' @description takes a list of of models and returns a list of reconciled models

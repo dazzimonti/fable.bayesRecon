@@ -1,13 +1,36 @@
-#' Probabilistic forecast reconciliation of mixed hierarchies via conditioning
+#' @title Probabilistic reconciliation of mixed hierarchies
 #'
 #' @description
 #'
-#' Uses importance sampling to draw samples from the reconciled
-#' forecast distribution, obtained via conditioning, in the case of a mixed hierarchy. 
+#' `bayesRecon_MixCond` specifies Mixed-Conditioning (Mix-Cond) reconciliation for use within 
+#' `reconcile()`. The method uses importance sampling to draw samples from the reconciled
+#' forecast distribution, obtained via conditioning, in the case of a mixed hierarchy.
+#' 
+#' `bayesRecon_TDcond` specifies Top-Down Conditioning reconciliation for use within 
+#' `reconcile()`. The method uses a top-down conditioning algorithm: first, upper base forecasts 
+#' are reconciled via conditioning using only the hierarchical constraints between the
+#' upper; then, the bottom distributions are updated via a probabilistic top-down procedure.
+#' 
+#' Reconciliation is performed when`forecast()` is called on the resulting model.
+#' Marginal reconciled forecasts follow a sample distribution.
 #'
 #' @param models A list of fitted models to reconcile.
+#' @param n_samples Number of samples to draw from the reconciled distribution.
+#' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
 #'
-#' @return An object of class `lst_bayesRecon_MixCond`.
+#' @return An object of class `lst_bayesRecon_MixCond` or `lst_bayesRecon_TDcond`.
+#' 
+#' @references
+#' Zambon, L., Azzimonti, D., Rubattu, N., Corani, G. (2024).
+#' *Probabilistic reconciliation of mixed-type hierarchical time series*.
+#' Proceedings of the Fortieth Conference on Uncertainty in Artificial Intelligence,
+#' PMLR 244:4078-4095. <https://proceedings.mlr.press/v244/zambon24a.html>.
+#'
+#' @seealso [reconc_BUIS()], [reconc_gaussian()], [PMF]
+#'
+#' @name Mixed_reconciliation
+ 
+#' @rdname Mixed_reconciliation
 #'
 #' @export
 bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
@@ -31,8 +54,6 @@ bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRU
 #' @param key_data A keyed data frame from `fabletools`.
 #' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
 #' @param new_data Optional new data for forecasting (not currently used).
-#' @param n_samples Number of samples to draw (default: 1000).
-#' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
 #' @param ... Additional arguments passed to other methods.
 #'
 #' @return A fable object with MixCond-reconciled distributions and point forecasts.
