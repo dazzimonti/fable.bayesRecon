@@ -11,8 +11,9 @@
 #' are reconciled via conditioning using only the hierarchical constraints between the
 #' upper; then, the bottom distributions are updated via a probabilistic top-down procedure.
 #' 
-#' Reconciliation is performed when`forecast()` is called on the resulting model.
+#' Reconciliation is performed when `forecast()` is called on the resulting model.
 #' Marginal reconciled forecasts follow a sample distribution.
+#'
 #'
 #' @param models A list of fitted models to reconcile.
 #' @param n_samples Number of samples to draw from the reconciled distribution.
@@ -24,7 +25,8 @@
 #' Proceedings of the Fortieth Conference on Uncertainty in Artificial Intelligence,
 #' PMLR 244:4078-4095. <https://proceedings.mlr.press/v244/zambon24a.html>.
 #'
-#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [bayesRecon_BUIS()]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()], 
+#' [bayesRecon_BUIS()], [bayesRecon::reconc_MixCond()], [bayesRecon::reconc_TDcond()]
 #'
 #' @name bayesRecon_MixCond
  
@@ -56,6 +58,7 @@ bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRU
 #'
 #' @return A fable object with MixCond-reconciled distributions and point forecasts.
 #'
+#' @keywords internal
 #' @export
 forecast.lst_bayesRecon_MixCond <- function(
   object,

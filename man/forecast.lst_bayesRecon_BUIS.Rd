@@ -31,3 +31,4 @@ Produces probabilistic forecasts reconciled via Bottom-Up Importance Sampling (B
 This method samples from bottom-level distributions, computes upper-level paths via
 aggregation, and reweights samples according to upper-level forecast densities.
 }
+\keyword{internal}

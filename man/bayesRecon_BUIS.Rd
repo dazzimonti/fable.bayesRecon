@@ -15,7 +15,7 @@ bayesRecon_BUIS(models, n_samples = 1000)
 Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within
 \code{reconcile()}. The method uses the Bottom-Up Importance Sampling algorithm
 to draw samples from the reconciled forecast distribution, obtained via conditioning.
-Reconciliation is performed when\code{forecast()} is called on the resulting model.
+Reconciliation is performed when \code{forecast()} is called on the resulting model.
 Marginal reconciled forecasts follow a sample distribution.
 }
 \references{
@@ -25,5 +25,5 @@ Statistics and Computing 34 (1), 21.
 \doi{10.1007/s11222-023-10343-y}.
 }
 \seealso{
-\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}} \code{\link[=bayesRecon_MixCond]{bayesRecon_MixCond()}}
+\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}}, \code{\link[=bayesRecon_MixCond]{bayesRecon_MixCond()}}, \code{\link[bayesRecon:reconc_BUIS]{bayesRecon::reconc_BUIS()}}
 }

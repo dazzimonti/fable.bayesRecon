@@ -31,3 +31,4 @@ Produces probabilistic forecasts reconciled via mixed hierarchy conditioning.
 This method handles mixed hierarchies (with cross-constraints) by applying
 conditioning-based reconciliation to draw samples from the reconciled distributions.
 }
+\keyword{internal}

@@ -39,6 +39,7 @@ Suggests:
     fable,
     tsibbledata,
     ggplot2,
+    scales,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
