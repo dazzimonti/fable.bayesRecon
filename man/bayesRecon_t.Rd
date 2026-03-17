@@ -18,19 +18,20 @@ If not provided, the prior is estimated from the data.
 via seasonal naive resduals. If not provided, the frequency is inferred from the data.
 \item \code{criterion}: Criterion for estimating the naive covariance matrix (default: "RSS").
 \item \code{l_shr}: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals.
-}
-
-#' @references
-Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
-matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
-\url{https://arxiv.org/abs/2506.19554}}
+}}
 }
 \description{
-Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within
-\code{reconcile()}. The method uses the Bottom-Up Importance Sampling algorithm
-to draw samples from the reconciled forecast distribution, obtained via conditioning.
-Reconciliation is performed when\code{forecast()} is called on the resulting model.
+\code{bayesRecon_t}pecifies Students-t reconciliation (t-Rec) for use within
+\code{reconcile()}. The base forecasts are assumed to be jointly Gaussian,
+conditionally on the covariance matrix of the forecast errors. A Bayesian
+approach is adopted to account for the uncertainty of the covariance matrix.
+Reconciliation is performed when \code{forecast()} is called on the resulting model.
 Marginal reconciled forecasts follow a Student-t distribution.
+}
+\references{
+Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
+matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
+\url{https://arxiv.org/abs/2506.19554}
 }
 \seealso{
 \code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}} \code{\link[fabletools:min_trace]{fabletools::min_trace()}}

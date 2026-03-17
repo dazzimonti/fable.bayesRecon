@@ -3,9 +3,9 @@ testthat::test_that("bayesRecon_t runs reconciliation and produces valid output"
   # Test 1
   testthat::expect_no_error({
     fc1 <- tourism_melbourne() |>
-      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(base, 
-                                                               prior = list(nu = 7,
-                                                                            Psi = diag(5) * 3000))) |>
+      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(
+        base, 
+        prior = list(nu = 7, Psi = diag(5) * 3000))) |>
       fabletools::forecast(h = "2 years") |> 
       dplyr::filter(.model == "t")
     distr1 <- fc1[[fabletools::distribution_var(fc1)]]
@@ -23,9 +23,7 @@ testthat::test_that("bayesRecon_t runs reconciliation and produces valid output"
   # Test 3
   testthat::expect_no_error({
     fc3 <- m5_stores() |>
-      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(base,
-                                                               posterior = list(nu = 2000,
-                                                                                Psi = 1000*(matrix(1, nrow = 14, ncol = 14) + diag(14) * 14)))) |>
+      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(base)) |>
       fabletools::forecast(h = 28) |> 
       dplyr::filter(.model == "t")
     distr3 <- fc3[[fabletools::distribution_var(fc3)]]
@@ -34,7 +32,9 @@ testthat::test_that("bayesRecon_t runs reconciliation and produces valid output"
   # Test 4
   testthat::expect_no_error({
     fc4 <- swiss_tourism_all() |>
-      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(base)) |>
+      fabletools::reconcile(t = fable.bayesRecon::bayesRecon_t(
+        base, 
+        prior = list(nu = 50, Psi = 10e6 * (200*diag(27) + matrix(1, 27, 27))))) |>
       fabletools::forecast(h = 6) |> 
       dplyr::filter(.model == "t")
     distr4 <- fc4[[fabletools::distribution_var(fc4)]]
