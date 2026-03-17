@@ -2,17 +2,28 @@
 % Please edit documentation in R/bayesRecon_BUIS.R
 \name{bayesRecon_BUIS}
 \alias{bayesRecon_BUIS}
-\title{BUIS for Probabilistic Reconciliation of forecasts via conditioning}
+\title{BUIS for probabilistic reconciliation of forecasts via conditioning}
 \usage{
-bayesRecon_BUIS(models)
+bayesRecon_BUIS(models, n_samples = 1000)
 }
 \arguments{
 \item{models}{A list of fitted models to reconcile.}
-}
-\value{
-An object of class \code{lst_bayesRecon_BUIS}.
+
+\item{n_samples}{Number of samples to draw from the reconciled distribution.}
 }
 \description{
-Uses the Bottom-Up Importance Sampling algorithm to draw samples from the reconciled
-forecast distribution, obtained via conditioning.
+Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within
+\code{reconcile()}. The method uses the Bottom-Up Importance Sampling algorithm
+to draw samples from the reconciled forecast distribution, obtained via conditioning.
+Reconciliation is performed when\code{forecast()} is called on the resulting model.
+Marginal reconciled forecasts follow a sample distribution.
+}
+\references{
+Zambon, L., Azzimonti, D. & Corani, G. (2024).
+\emph{Efficient probabilistic reconciliation of forecasts for real-valued and count time series}.
+Statistics and Computing 34 (1), 21.
+\doi{10.1007/s11222-023-10343-y}.
+}
+\seealso{
+\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}} \code{\link[=bayesRecon_MixCond]{bayesRecon_MixCond()}}
 }

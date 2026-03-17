@@ -17,8 +17,6 @@
 #' @param models A list of fitted models to reconcile.
 #' @param n_samples Number of samples to draw from the reconciled distribution.
 #' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
-#'
-#' @return An object of class `lst_bayesRecon_MixCond` or `lst_bayesRecon_TDcond`.
 #' 
 #' @references
 #' Zambon, L., Azzimonti, D., Rubattu, N., Corani, G. (2024).
@@ -26,11 +24,11 @@
 #' Proceedings of the Fortieth Conference on Uncertainty in Artificial Intelligence,
 #' PMLR 244:4078-4095. <https://proceedings.mlr.press/v244/zambon24a.html>.
 #'
-#' @seealso [reconc_BUIS()], [reconc_gaussian()], [PMF]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [bayesRecon_BUIS()]
 #'
-#' @name Mixed_reconciliation
+#' @name bayesRecon_MixCond
  
-#' @rdname Mixed_reconciliation
+#' @rdname bayesRecon_MixCond
 #'
 #' @export
 bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {

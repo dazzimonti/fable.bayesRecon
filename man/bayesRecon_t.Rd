@@ -2,22 +2,36 @@
 % Please edit documentation in R/bayesRecon_t.R
 \name{bayesRecon_t}
 \alias{bayesRecon_t}
-\title{Student-t forecast reconciliation}
+\title{t-Rec: reconciliation via conditioning with uncertain covariance via multivariate t-distribution}
 \usage{
-bayesRecon_t(models)
+bayesRecon_t(models, ...)
 }
 \arguments{
 \item{models}{A list of fitted models to reconcile.}
+
+\item{...}{Additional arguments passed to other methods, including:  (write something...)
+\itemize{
+\item \code{prior}: Optional list with entries \code{nu} and \code{Psi} specifying the parameters
+of the Inverse-Wishart prior distribution for the covariance matrix.
+If not provided, the prior is estimated from the data.
+\item \code{freq}: Optional frequency of the time series, used for estimating the naive covariance matrix
+via seasonal naive resduals. If not provided, the frequency is inferred from the data.
+\item \code{criterion}: Criterion for estimating the naive covariance matrix (default: "RSS").
+\item \code{l_shr}: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals.
 }
-\value{
-An object of class \code{lst_bayesRecon_t}.
+
+#' @references
+Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
+matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
+\url{https://arxiv.org/abs/2506.19554}}
 }
 \description{
-Creates an object for probabilistic forecast reconciliation using
-Student-t distributions. This method applies a multivariate Student-t model
-to posterior estimation, accounting for heavier tails than
-normal distributions.
+Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within
+\code{reconcile()}. The method uses the Bottom-Up Importance Sampling algorithm
+to draw samples from the reconciled forecast distribution, obtained via conditioning.
+Reconciliation is performed when\code{forecast()} is called on the resulting model.
+Marginal reconciled forecasts follow a Student-t distribution.
 }
-\examples{
-# bayesRecon_t(base_models)
+\seealso{
+\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}} \code{\link[fabletools:min_trace]{fabletools::min_trace()}}
 }

@@ -9,26 +9,25 @@
   key_data,
   point_forecast = list(.mean = mean),
   new_data = NULL,
-  n_samples = 1000,
-  suppress_warnings = TRUE,
   ...
 )
 }
 \arguments{
-\item{object}{TODO}
+\item{object}{An object of class \code{lst_bayesRecon_MixCond} containing fitted models.}
 
-\item{key_data}{TODO}
+\item{key_data}{A keyed data frame from \code{fabletools}.}
 
-\item{point_forecast}{TODO}
+\item{point_forecast}{A list of point forecast functions (default: \code{list(.mean = mean)}).}
 
-\item{new_data}{TODO}
-
-\item{n_samples}{number of samples for output distribution}
-
-\item{suppress_warnings}{if TRUE warnings are not returned}
+\item{new_data}{Optional new data for forecasting (not currently used).}
 
 \item{...}{extra parameters to be passed on.}
 }
+\value{
+A fable object with TDcond-reconciled distributions and point forecasts.
+}
 \description{
-takes a list of of models and returns a list of reconciled models
+Produces probabilistic forecasts reconciled via top-down conditioning.
+Upper base forecasts are reconciled via conditioning. The recondiled
+upper forecasts are then propagate to bottom via probabilisitc top-down.
 }

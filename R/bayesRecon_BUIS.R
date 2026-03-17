@@ -11,16 +11,13 @@
 #' @param models A list of fitted models to reconcile.
 #' @param n_samples Number of samples to draw from the reconciled distribution.
 #'
-#' @return An object of class `lst_bayesRecon_BUIS`.
-#'
 #' @references
 #' Zambon, L., Azzimonti, D. & Corani, G. (2024).
 #' *Efficient probabilistic reconciliation of forecasts for real-valued and count time series*.
 #' Statistics and Computing 34 (1), 21.
 #' \doi{10.1007/s11222-023-10343-y}.
 #'
-#' @seealso
-#' [reconc_gaussian()]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [bayesRecon_MixCond()]
 #'
 #' @export
 bayesRecon_BUIS <- function(models, n_samples = 1000) {

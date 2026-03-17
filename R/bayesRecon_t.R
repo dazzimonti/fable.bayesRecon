@@ -19,15 +19,12 @@
 #' - `criterion`: Criterion for estimating the naive covariance matrix (default: "RSS").
 #' - `l_shr`: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals. 
 #'
-#' @return An object of class `lst_bayesRecon_t`.
-#'
 #' #' @references
 #' Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
 #' matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
 #' \url{https://arxiv.org/abs/2506.19554}
 #' 
-#' @seealso
-#' [reconc_gaussian()]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [fabletools::min_trace()]
 #'
 #' @export
 bayesRecon_t <- function(models, ...) {
@@ -42,7 +39,7 @@ bayesRecon_t <- function(models, ...) {
 #' using a multivariate Student-t model with flexible prior/posterior specification.
 #'
 #' @importFrom fabletools forecast distribution_var
-#' @importFrom stats family frequency
+#' @importFrom stats family frequency cov2cor
 #' @importFrom purrr map map_dbl map_int list_c reduce exec
 #' @importFrom bayesRecon .core_reconc_t multi_log_score_optimization .compute_naive_cov
 #' @importFrom dplyr full_join
@@ -57,7 +54,7 @@ bayesRecon_t <- function(models, ...) {
 #' @param new_data Optional new data for forecasting (not currently used).
 #' @param ... Additional arguments passed to other methods.
 #'
-#' @return A fable object with reconciled distributions and point forecasts.
+#' @return A fable object with t-reconciled distributions and point forecasts.
 #'
 #' @export
 forecast.lst_bayesRecon_t <- function(

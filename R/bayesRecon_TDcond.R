@@ -1,4 +1,4 @@
-#' @rdname Mixed_reconciliation
+#' @rdname bayesRecon_MixCond
 #'
 #' @export
 bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
@@ -27,7 +27,8 @@ bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE
 #' @param ... Additional arguments passed to other methods.
 #' @param ... extra parameters to be passed on.
 #' 
-#' @description takes a list of of models and returns a list of reconciled models
+#' @return A fable object with TDcond-reconciled distributions and point forecasts.
+#' 
 #' @export
 forecast.lst_bayesRecon_TDcond <- function(
     object,

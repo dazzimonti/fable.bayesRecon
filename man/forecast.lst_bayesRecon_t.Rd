@@ -24,7 +24,7 @@
 \item{...}{Additional arguments passed to other methods.}
 }
 \value{
-A fable object with reconciled distributions and point forecasts.
+A fable object with t-reconciled distributions and point forecasts.
 }
 \description{
 Produces probabilistic forecasts reconciled via Student-t reconciliation.
