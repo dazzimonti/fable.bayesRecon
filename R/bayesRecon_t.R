@@ -101,76 +101,60 @@ forecast.lst_bayesRecon_t <- function(
   
   # Extract additional parameters specified as attributes 
   prior <- attr(object, "prior")
-  posterior <- attr(object, "posterior")
   freq <- attr(object, "freq")
   criterion <- attr(object, "criterion")
   l_shr <- attr(object, "l_shr")
   if (is.null(criterion)) criterion <- "RSS"
   if (is.null(l_shr)) l_shr <- 1e-04
   
-  if (!is.null(posterior)) {
-    # Try to get directly the posterior from the argument
-    if (is.list(posterior)) {
-      nu_post = posterior$nu
-      Psi_post = posterior$Psi
-      if (is.null(nu_post) | is.null(Psi_post)) {
-        stop("Input error: posterior must be a list with entries nu and Psi")
-      }
-    } else {
-      stop("Input error: posterior must be a list with entries nu and Psi")
-    }
-  } else {
-    # Compute the covariance matrix of the residuals
-    res <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr)
-    covm_res <- crossprod(res) / nrow(res) 
-    R1 <- cov2cor(covm_res)
+  # Compute the covariance matrix of the residuals
+  res <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr)
+  covm_res <- crossprod(res) / nrow(res) 
+  R1 <- cov2cor(covm_res)
     
-    if (!is.null(prior)) {
-      # Try to get directly the prior from the argument
-      if (is.list(prior)) {
-        nu_prior = prior$nu
-        Psi_prior = prior$Psi
-        if (is.null(nu_prior) | is.null(Psi_prior)) {
-          stop("Input error: prior must be a list with entries nu and Psi")
-        }
-      } else {
+  # Try to get directly the prior from the argument
+  if (!is.null(prior)) {
+    if (is.list(prior)) {
+      nu_prior = prior$nu
+      Psi_prior = prior$Psi
+      if (is.null(nu_prior) | is.null(Psi_prior)) {
         stop("Input error: prior must be a list with entries nu and Psi")
       }
     } else {
-      # Compute the prior from observed data ; obtain them in matrix format
-      obs = map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
-      if(length(unique(map_dbl(obs, nrow))) > 1){
-        # Join observed by index #199
-        obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(obs[[1]]))[,-1]))
-      } else {
-        obs <- matrix(exec(c, !!!map(obs, `[[`, 2)), ncol = length(object))
-      }
-      
-      # Identify the frequency and compute the residuals of the naive forecasts
-      if (is.null(freq)){
-        freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
-        freq <- if (length(unique(freq)) == 1) unique(freq) else 1
-      }
-      covm_naive <- .compute_naive_cov(obs, freq = freq, criterion = criterion)
-      
-      # Identify optimal prior parameters via LOO-CV
-      loo_cv = multi_log_score_optimization(res, covm_naive)
-      nu_prior = loo_cv$optimal_nu
-      Psi_prior = (nu_prior - n_tot - 1) * covm_naive
+      stop("Input error: prior must be a list with entries nu and Psi")
     }
+  } else {
+    
+    # Compute the prior from observed data; obtain them in matrix format
+    obs = map(object[c(upr_ts, btm_ts[btm_idx])], ~.$data)
+    if(length(unique(map_dbl(obs, nrow))) > 1){
+      obs <- unname(as.matrix(reduce(obs, full_join, by = index_var(obs[[1]]))[,-1]))
+    } else {
+      obs <- matrix(exec(c, !!!map(obs, `[[`, 2)), ncol = length(object))
+    }
+      
+    # Identify the frequency and compute the residuals of the naive forecasts
+    if (is.null(freq)){
+      freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
+      freq <- if (length(unique(freq)) == 1) unique(freq) else 1
+    }
+    covm_naive <- .compute_naive_cov(obs, freq = freq, criterion = criterion)
+        
+    # Identify optimal prior parameters via LOO-CV
+    loo_cv = multi_log_score_optimization(res, covm_naive)
+    nu_prior = loo_cv$optimal_nu
+    Psi_prior = (nu_prior - n_tot - 1) * covm_naive
   }
 
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
     
     # Compute posterior parameters if they are not directly specified
-    if (exists("R1")) {
-      var_h <- distributional::variance(base_forecasts)
-      W_h <- diag(sqrt(var_h))%*%R1%*%t(diag(sqrt(var_h)))
-      W_h <- (1 - l_shr)*W_h + l_shr*diag(diag(W_h))
-      Psi_post = Psi_prior + nrow(res) * W_h
-      nu_post = nu_prior + nrow(res)
-    }
+    var_h <- distributional::variance(base_forecasts)
+    W_h <- diag(sqrt(var_h))%*%R1%*%t(diag(sqrt(var_h)))
+    W_h <- (1 - l_shr)*W_h + l_shr*diag(diag(W_h))
+    Psi_post = Psi_prior + nrow(res) * W_h
+    nu_post = nu_prior + nrow(res)
     
     # Extrapolate point forecast
     base_fc_mean = map_dbl(base_forecasts, mean)
