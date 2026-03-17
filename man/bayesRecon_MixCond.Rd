@@ -26,7 +26,7 @@ forecast distribution, obtained via conditioning, in the case of a mixed hierarc
 are reconciled via conditioning using only the hierarchical constraints between the
 upper; then, the bottom distributions are updated via a probabilistic top-down procedure.
 
-Reconciliation is performed when\code{forecast()} is called on the resulting model.
+Reconciliation is performed when \code{forecast()} is called on the resulting model.
 Marginal reconciled forecasts follow a sample distribution.
 }
 \references{
@@ -36,5 +36,6 @@ Proceedings of the Fortieth Conference on Uncertainty in Artificial Intelligence
 PMLR 244:4078-4095. \url{https://proceedings.mlr.press/v244/zambon24a.html}.
 }
 \seealso{
-\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}} \code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}
+\code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}},
+\code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_MixCond()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_TDcond()}}
 }

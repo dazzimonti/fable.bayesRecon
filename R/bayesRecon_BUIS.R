@@ -5,7 +5,7 @@
 #' Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within 
 #' `reconcile()`. The method uses the Bottom-Up Importance Sampling algorithm 
 #' to draw samples from the reconciled forecast distribution, obtained via conditioning.
-#' Reconciliation is performed when`forecast()` is called on the resulting model.
+#' Reconciliation is performed when `forecast()` is called on the resulting model.
 #' Marginal reconciled forecasts follow a sample distribution.
 #'
 #' @param models A list of fitted models to reconcile.
@@ -17,7 +17,7 @@
 #' Statistics and Computing 34 (1), 21.
 #' \doi{10.1007/s11222-023-10343-y}.
 #'
-#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [bayesRecon_MixCond()]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()], [bayesRecon_MixCond()], [bayesRecon::reconc_BUIS()]
 #'
 #' @export
 bayesRecon_BUIS <- function(models, n_samples = 1000) {
@@ -46,6 +46,7 @@ bayesRecon_BUIS <- function(models, n_samples = 1000) {
 #'
 #' @return A fable object with BUIS-reconciled distributions and point forecasts.
 #'
+#' @keywords internal
 #' @export
 forecast.lst_bayesRecon_BUIS <- function(
   object,

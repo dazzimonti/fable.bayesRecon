@@ -31,3 +31,4 @@ Produces probabilistic forecasts reconciled via Student-t reconciliation.
 The method reconciles base forecasts from upper and bottom level series
 using a multivariate Student-t model with flexible prior/posterior specification.
 }
+\keyword{internal}

@@ -2,21 +2,28 @@
 #'
 #' @description
 #' 
-#' `bayesRecon_t`pecifies Students-t reconciliation (t-Rec) for use within 
-#' `reconcile()`. The base forecasts are assumed to be jointly Gaussian, 
-#' conditionally on the covariance matrix of the forecast errors. A Bayesian 
-#' approach is adopted to account for the uncertainty of the covariance matrix. 
+#' Specifies t-Rec reconciliation for use within `reconcile()`. 
+#' 
+#' Reconciles base forecasts by conditioning on the hierarchical constraints. 
+#' The base forecasts are assumed to be jointly Gaussian, 
+#' conditionally on the covariance matrix of the forecast errors. 
+#' A Bayesian approach is adopted to account for the uncertainty of the covariance matrix. 
+#' An Inverse-Wishart prior is specified on the covariance matrix, 
+#' leading to a multivariate t-distribution for the base forecasts. 
+#' The reconciliation via conditioning is in closed-form, 
+#' yielding a multivariate t reconciled distribution.
+#' 
 #' Reconciliation is performed when `forecast()` is called on the resulting model.
 #' Marginal reconciled forecasts follow a Student-t distribution.
 #' 
 #'
 #' @param models A list of fitted models to reconcile.
-#' @param ... Additional arguments passed to other methods, including:  (write something...)
+#' @param ... Additional arguments passed to other methods, including:  
 #' - `prior`: Optional list with entries `nu` and `Psi` specifying the parameters 
 #' of the Inverse-Wishart prior distribution for the covariance matrix. 
 #' If not provided, the prior is estimated from the data.
 #' - `freq`: Optional frequency of the time series, used for estimating the naive covariance matrix
-#' via seasonal naive resduals. If not provided, the frequency is inferred from the data.
+#' via seasonal naive residuals. If not provided, the frequency is inferred from the data.
 #' - `criterion`: Criterion for estimating the naive covariance matrix (default: "RSS").
 #' - `l_shr`: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals. 
 #'
@@ -25,7 +32,8 @@
 #' matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
 #' \url{https://arxiv.org/abs/2506.19554}
 #' 
-#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()] [fabletools::min_trace()]
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()],
+#'  [fabletools::min_trace()], [bayesRecon::reconc_t()]
 #'
 #' @export
 bayesRecon_t <- function(models, ...) {
@@ -56,7 +64,8 @@ bayesRecon_t <- function(models, ...) {
 #' @param ... Additional arguments passed to other methods.
 #'
 #' @return A fable object with t-reconciled distributions and point forecasts.
-#'
+#' 
+#' @keywords internal
 #' @export
 forecast.lst_bayesRecon_t <- function(
     object,

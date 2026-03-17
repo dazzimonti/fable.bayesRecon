@@ -29,6 +29,7 @@ bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE
 #' 
 #' @return A fable object with TDcond-reconciled distributions and point forecasts.
 #' 
+#' @keywords internal
 #' @export
 forecast.lst_bayesRecon_TDcond <- function(
     object,
