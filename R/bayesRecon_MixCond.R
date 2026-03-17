@@ -86,7 +86,8 @@ forecast.lst_bayesRecon_MixCond <- function(
       mean_upper = mean_upper,
       cov_upper = upr_covm,
       num_samples = n_samples,
-      return_type = "samples"
+      return_type = "samples",
+      suppress_warnings = suppress_warnings
     )
     
     # Return reconciled samples as a distributional object

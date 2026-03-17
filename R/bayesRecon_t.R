@@ -37,7 +37,6 @@ bayesRecon_t <- function(models) {
 #' @param key_data A keyed data frame from `fabletools`.
 #' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
 #' @param new_data Optional new data for forecasting (not currently used).
-#' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
 #' @param ... Additional arguments passed to other methods.
 #'
 #' @return A fable object with reconciled distributions and point forecasts.
@@ -48,7 +47,6 @@ forecast.lst_bayesRecon_t <- function(
     key_data,
     point_forecast = list(.mean = mean),
     new_data = NULL,
-    suppress_warnings = TRUE,
     ...
 ) {
   # Take models from fabletools, and prepare for BUIS
@@ -80,8 +78,11 @@ forecast.lst_bayesRecon_t <- function(
   prior <- add_args$prior
   posterior <- add_args$posterior
   freq <- add_args$freq
-  criterion <- ifelse(is.null(add_args$criterion), "RSS", add_args$criterion)
-  l_shr <- ifelse(is.null(add_args$l_shr), 1e-04, add_args$l_shr)
+  criterion <- add_args$criterion
+  l_shr <- add_args$l_shr
+  # If not specified, set default values for criterion and l_shr
+  if (is.null(criterion)) criterion <- "RSS"
+  if (is.null(l_shr)) l_shr <- 1e-04
   
   if (!is.null(posterior)) {
     # Try to get directly the posterior from the argument
@@ -124,7 +125,7 @@ forecast.lst_bayesRecon_t <- function(
       # Identify the frequency and compute the residuals of the naive forecasts
       if (is.null(freq)){
         freq <- map_int(object[c(upr_ts, btm_ts[btm_idx])], ~ frequency(.$data))
-        freq <- ifelse(length(unique(freq)) == 1, unique(freq), 1)
+        freq <- if (length(unique(freq)) == 1) unique(freq) else 1
       }
       covm_naive <- .compute_naive_cov(obs, freq = freq, criterion = criterion)
       

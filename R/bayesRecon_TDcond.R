@@ -89,7 +89,8 @@ forecast.lst_bayesRecon_TDcond <- function(
       L_pmf = L_pmf,
       num_samples =  n_samples,
       return_type = "samples", 
-      min_fraction_samples_ok = .5
+      min_fraction_samples_ok = .5,
+      suppress_warnings = suppress_warnings
     )
     
     # Return reconciled samples as a distributional object
@@ -121,7 +122,6 @@ forecast.lst_bayesRecon_TDcond <- function(
 #' @param dist A vector or list of `distributional` objects.
 #' @param negative_to_zero Logical, currently unused. Reserved for future use.
 #' @param toll Tail probability used to truncate the support when estimating the PMF.
-#' @param num_samples Number of samples used to round non-integer supports.
 #' @param alpha_smoothing Numeric, currently unused. Reserved for future use.
 #'
 #' @return A list of numeric vectors, one PMF per input distribution.
@@ -132,7 +132,7 @@ forecast.lst_bayesRecon_TDcond <- function(
 #' @importFrom stats density quantile
 #'
 #' @keywords internal
-make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, num_samples = 1e04, alpha_smoothing = 1e-9){
+make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, alpha_smoothing = 1e-9){
   wm <- character(0)
   supp <- dist |> support()
   # Identify the negatively supported distributions

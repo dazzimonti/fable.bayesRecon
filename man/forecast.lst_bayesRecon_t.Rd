@@ -9,7 +9,6 @@
   key_data,
   point_forecast = list(.mean = mean),
   new_data = NULL,
-  suppress_warnings = TRUE,
   ...
 )
 }
@@ -21,8 +20,6 @@
 \item{point_forecast}{A list of point forecast functions (default: \code{list(.mean = mean)}).}
 
 \item{new_data}{Optional new data for forecasting (not currently used).}
-
-\item{suppress_warnings}{If \code{TRUE}, suppress warnings from reconciliation.}
 
 \item{...}{Additional arguments passed to other methods.}
 }
