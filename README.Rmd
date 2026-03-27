@@ -64,7 +64,7 @@ The package follows the standard `fable` workflow:
 3. Specify the reconciliation strategy inside `reconcile()`.
 4. Produce reconciled probabilistic forecasts with `forecast()`.
 
-We provide in the vignette a simple usage example; refer to the package documentation for more details on the reconciliation methods and their parameters.
+We provide in [this vignette](vignettes/fable.bayesRecon.Rmd) a simple usage example; refer to the package documentation for more details on the reconciliation methods and their parameters.
 
 ## References
 
