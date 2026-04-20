@@ -40,11 +40,6 @@ Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncert
 matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
 \url{https://arxiv.org/abs/2506.19554}
 }
-\references{
-Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
-matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
-\url{https://arxiv.org/abs/2506.19554}
-}
 \seealso{
 \code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}},
 \code{\link[fabletools:min_trace]{fabletools::min_trace()}}, \code{\link[bayesRecon:reconc_t]{bayesRecon::reconc_t()}}

@@ -64,7 +64,9 @@ The package follows the standard `fable` workflow:
 
 We provide in [this vignette](vignettes/fable.bayesRecon.Rmd) a simple
 usage example; refer to the package documentation for more details on
-the reconciliation methods and their parameters.
+the reconciliation methods and their parameters. See the book Hyndman
+and Athanasopoulos (2021) for a general introduction to forecasting with
+`fable` and `fabletools`.
 
 ## References
 
@@ -72,6 +74,10 @@ Carrara, C., Corani, G., Azzimonti, D., Zambon, L. (2025). *Modeling the
 uncertainty on the covariance matrix for probabilistic forecast
 reconciliation*. arXiv preprint arXiv:2506.19554. [Available
 here](https://arxiv.org/abs/2506.19554)
+
+Hyndman, R.J., & Athanasopoulos, G. (2021). *Forecasting: principles and
+practice*. 3rd edition, OTexts: Melbourne, Australia.
+[OTexts.com/fpp3](https://OTexts.com/fpp3). Accessed on 20/04/2026.
 
 Zambon, L., Azzimonti, D. & Corani, G. (2024). *Efficient probabilistic
 reconciliation of forecasts for real-valued and count time series*.
@@ -86,8 +92,66 @@ here](https://proceedings.mlr.press/v244/zambon24a.html)
 
 ## Contributors
 
-TODO (ordine da stabilire) COPILOT SUGGERISCE: Luca Zambon, Daniele
-Azzimonti, Giorgio Corani, Nicola Rubattu, Carlo Carrara.
+<!-- prettier-ignore-start -->
+
+<!-- markdownlint-disable -->
+
+<table>
+
+<tbody>
+
+<tr>
+
+<td align="center" valign="top" width="14.28%">
+
+<a href="https://dazzimonti.github.io/dazzimonti/">
+<img src="https://github.com/dazzimonti.png" width="100px;" alt="Dario Azzimonti" style="border-radius:50%;border:1px solid #646464;"/><br />
+<sub><b>Dario Azzimonti</b></sub></a><br />
+<sub>(Maintainer)</sub><br />
+<a href="mailto:dario.azzimonti@gmail.com?subject=[fable.bayesRecon package]">Email</a>
+</td>
+
+<td align="center" valign="top" width="14.28%">
+
+<a href="#">
+<img src="https://github.com/StefanoDamato.png" width="100px;" alt="Stefano Damato" style="border-radius:50%;border:1px solid #646464;"/><br />
+<sub><b>Stefano Damato</b></sub></a><br /> <sub> </sub><br />
+<a href="mailto:stefano.damato@idsia.ch?subject=[fable.bayesRecon package]">Email</a>
+</td>
+
+<td align="center" valign="top" width="14.28%">
+
+<a href="#">
+<img src="https://github.com/LorenzoZambon.png" width="100px;" alt="Lorenzo Zambon" style="border-radius:50%;border:1px solid #646464;"/><br />
+<sub><b>Lorenzo Zambon</b></sub></a><br /> <sub> </sub><br />
+<a href="mailto:lorenzo.zambon@idsia.ch?subject=[fable.bayesRecon package]">Email</a>
+</td>
+
+<td align="center" valign="top" width="14.28%">
+
+<a href="#">
+<img src="https://github.com/CarraraChiara.png" width="100px;" alt="Chiara Carrara" style="border-radius:50%;border:1px solid #646464;"/><br />
+<sub><b>Chiara Carrara</b></sub></a><br /> <sub> </sub><br />
+<a href="mailto:chiara.carrara03@universitadipavia.it?subject=[fable.bayesRecon package]">Email</a>
+</td>
+
+<td align="center" valign="top" width="14.28%">
+
+<a href="https://sites.google.com/site/awerbhjkl678214/home">
+<img src="https://github.com/gcorani.png" width="100px;" alt="Giorgio Corani" style="border-radius:50%;border:1px solid #646464;"/><br />
+<sub><b>Giorgio Corani</b></sub></a><br /> <sub> </sub><br />
+<a href="mailto:giorgio.corani@idsia.ch?subject=[fable.bayesRecon package]">Email</a>
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<!-- markdownlint-restore -->
+
+<!-- prettier-ignore-end -->
 
 ## Getting help
 
