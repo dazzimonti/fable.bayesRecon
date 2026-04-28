@@ -39,8 +39,8 @@ forecast.lst_bayesRecon_TDcond <- function(
     ...
 ) {
   # Take models from fabletools, and prepare for BUIS
-  # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
-  S <- get_S(key_data)
+  # Produce the structural matrix from the key_data structure
+  S <- fabletools::coherent_smat(key_data)
   
   # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
   fc <- NextMethod()

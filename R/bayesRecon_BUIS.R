@@ -56,8 +56,9 @@ forecast.lst_bayesRecon_BUIS <- function(
   ...
 ) {
   # Take models from fabletools, and prepare for BUIS
-  # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
-  S <- get_S(key_data)
+  # Produce the structural matrix from the key_data structure
+  S <- fabletools::coherent_smat(key_data)
+  
   # core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
   # get_HG <- getFromNamespace(".get_HG", "bayesRecon")
   

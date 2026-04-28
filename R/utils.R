@@ -21,35 +21,6 @@ transpose_vec <- function(.l) {
   return(result)
 }
 
-#' Build summing matrix from key data
-#'
-#' Constructs the summing matrix $S$ from keyed data using fabletools
-#' internal helpers.
-#'
-#' @param key_data Keyed data produced by fabletools keying.
-#'
-#' @return An integer matrix representing the hierarchy summing matrix.
-#'
-#' @keywords internal
-#' @noRd
-#' 
-#' @importFrom vctrs vec_c
-get_S <- function(key_data) {
-  agg_data <- build_key_data_smat(key_data)
-  S <- matrix(
-    0L,
-    nrow = length(agg_data$agg),
-    ncol = max(vec_c(!!!agg_data$agg))
-  )
-  S[
-    length(agg_data$agg) *
-      (vec_c(!!!agg_data$agg) - 1) +
-      rep(seq_along(agg_data$agg), lengths(agg_data$agg))
-  ] <- 1L
-  S
-}
-
-
 #' Extract hierarchy metadata and base forecasts
 #'
 #' Computes indices for upper and bottom series, extracts the hierarchy
