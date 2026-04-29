@@ -21,7 +21,7 @@
 #'
 #' @export
 bayesRecon_BUIS <- function(models, n_samples = 1000) {
-  structure(models, class = c("lst_bayesRecon_BUIS", "lst_mdl", "list"),
+  structure(models, class = c("lst_bayesRecon_BUIS", "mdl_lst", "list"),
             n_samples = n_samples)
 }
 
@@ -62,7 +62,7 @@ forecast.lst_bayesRecon_BUIS <- function(
   # core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
   # get_HG <- getFromNamespace(".get_HG", "bayesRecon")
   
-  # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
+  # applies the next method ("mdl_lst", in class definition above) to extract the fitted models.
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution

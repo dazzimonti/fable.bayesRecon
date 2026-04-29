@@ -34,7 +34,7 @@
 #'
 #' @export
 bayesRecon_MixCond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
-  structure(models, class = c("lst_bayesRecon_MixCond", "lst_mdl", "list"),
+  structure(models, class = c("lst_bayesRecon_MixCond", "mdl_lst", "list"),
             n_samples = n_samples, suppress_warnings = suppress_warnings)
 }
 
@@ -71,7 +71,7 @@ forecast.lst_bayesRecon_MixCond <- function(
   # Produce the structural matrix from the key_data structure
   S <- fabletools::coherent_smat(key_data)
   
-  # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
+  # applies the next method ("mdl_lst", in class definition above) to extract the fitted models.
   fc <- NextMethod()
   
   # Series of lapply to extract the parameters of the distribution
