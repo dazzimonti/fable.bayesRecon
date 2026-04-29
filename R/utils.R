@@ -14,6 +14,7 @@
 #' @keywords internal
 #' @noRd
 #' @importFrom vctrs vec_c vec_slice
+#' @importFrom rlang abort enquo
 transpose_vec <- function(.l) {
   result <- lapply(seq_along(.l[[1]]), function(i) {
     do.call(vec_c, lapply(.l, vec_slice, i))
@@ -138,56 +139,6 @@ get_residuals <- function(object, upr_ts, btm_ts, btm_idx, n_upr,
   return(res)
 }
 
-#' Copied from fabletools/R/reconciliation.R
-#' @importFrom vctrs vec_c vec_group_loc vec_match vec_rbind
-#' @importFrom fabletools is_aggregated
-#' @importFrom purrr map
-#' @importFrom tibble as_tibble
-#' @importFrom rlang abort is_empty
-#' @keywords internal
-#' @noRd
-build_key_data_smat <- function(x){
-  kv <- names(x)[-ncol(x)]
-  agg_shadow <- as_tibble(map(x[kv], is_aggregated))
-  grp <- as_tibble(vec_group_loc(agg_shadow))
-  num_agg <- rowSums(grp$key)
-  # Initialise comparison leafs with known/guaranteed leafs
-  x_leaf <- x[vec_c(!!!grp$loc[which(num_agg == min(num_agg))]),]
-  
-  # Sort by disaggregation to identify aggregated leafs in order
-  grp <- grp[order(num_agg),]
-  
-  grp$match <- lapply(unname(split(grp, seq_len(nrow(grp)))), function(level){
-    disagg_col <- which(!vec_c(!!!level$key))
-    agg_idx <- level[["loc"]][[1]]
-    pos <- vec_match(x_leaf[disagg_col], x[agg_idx, disagg_col])
-    pos <- vec_group_loc(pos)
-    pos <- pos[!is.na(pos$key),]
-    # Add non-matches as leaf nodes
-    agg_leaf <- setdiff(seq_along(agg_idx), pos$key)
-    if(!is_empty(agg_leaf)){
-      pos <- vec_rbind(
-        pos,
-        structure(list(key = agg_leaf, loc = as.list(seq_along(agg_leaf) + nrow(x_leaf))), 
-                  class = "data.frame", row.names = agg_leaf)
-      )
-      x_leaf <<- vec_rbind(
-        x_leaf, 
-        x[agg_idx[agg_leaf],]
-      )
-    }
-    pos$loc[order(pos$key)]
-  })
-  if(any(lengths(grp$loc) != lengths(grp$match))) {
-    abort("An error has occurred when constructing the summation matrix.\nPlease report this bug here: https://github.com/tidyverts/fabletools/issues")
-  }
-  idx_leaf <- vec_c(!!!x_leaf$.rows)
-  x$.rows[unlist(x$.rows)[vec_c(!!!grp$loc)]] <- vec_c(!!!grp$match)
-  return(list(agg = x$.rows, leaf = idx_leaf))
-  # out <- matrix(0L, nrow = nrow(x), ncol = length(idx_leaf))
-  # out[nrow(x)*(vec_c(!!!x$.rows)-1) + rep(seq_along(x$.rows), lengths(x$.rows))] <- 1L
-  # out
-}
   
 #' Copied from fabletools/R/utils.R
 #' @keywords internal

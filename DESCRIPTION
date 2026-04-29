@@ -41,7 +41,6 @@ Imports:
     distributional,
     dplyr,
     tsibble,
-    tibble,
     rlang
 Suggests: 
     testthat (>= 3.0.0),
