@@ -35,7 +35,7 @@ RoxygenNote: 7.3.3
 Imports:
     stats,
     bayesRecon,
-    fabletools,
+    fabletools (>= 0.7.0),
     purrr,
     vctrs,
     distributional,
