@@ -1,164 +1,148 @@
-transpose_vec <- function(.l) {
-  result <- lapply(seq_along(.l[[1]]), function(i) {
-    do.call(vctrs::vec_c, lapply(.l, vctrs::vec_slice, i))
-  })
-}
-
-#' BUIS for Probabilistic Reconciliation of forecasts via conditioning
+#' BUIS for probabilistic reconciliation of forecasts via conditioning
+#' 
+#' @description
 #'
-#' Uses the Bottom-Up Importance Sampling algorithm to draw samples from the reconciled
-#' forecast distribution, obtained via conditioning.
+#' Specifies Bottom-Up Importance Sampling (BUIS) reconciliation for use within 
+#' `reconcile()`. The method uses the Bottom-Up Importance Sampling algorithm 
+#' to draw samples from the reconciled forecast distribution, obtained via conditioning.
+#' Reconciliation is performed when `forecast()` is called on the resulting model.
+#' Marginal reconciled forecasts follow a sample distribution.
 #'
 #' @param models A list of fitted models to reconcile.
+#' @param n_samples Number of samples to draw from the reconciled distribution.
 #'
-#' @return An object of class `lst_bayesRecon_BUIS`.
+#' @references
+#' Zambon, L., Azzimonti, D. & Corani, G. (2024).
+#' *Efficient probabilistic reconciliation of forecasts for real-valued and count time series*.
+#' Statistics and Computing 34 (1), 21.
+#' \doi{10.1007/s11222-023-10343-y}.
+#'
+#' @seealso [fabletools::reconcile()], [fabletools::aggregate_key()], [bayesRecon_MixCond()], [bayesRecon::reconc_BUIS()]
 #'
 #' @export
-bayesRecon_BUIS <- function(models) {
-  # For this I need an explanation
-  structure(models, class = c("lst_bayesRecon_BUIS", "lst_mdl", "list"))
+bayesRecon_BUIS <- function(models, n_samples = 1000) {
+  structure(models, class = c("lst_bayesRecon_BUIS", "mdl_lst", "list"),
+            n_samples = n_samples)
 }
 
 #' forecast.lst_bayesRecon_BUIS
-#' 
-# @importFrom fabletools forecast distribution_var
-#' @importFrom distributional generate dist_sample
+#'
+#' Produces probabilistic forecasts reconciled via Bottom-Up Importance Sampling (BUIS).
+#' This method samples from bottom-level distributions, computes upper-level paths via
+#' aggregation, and reweights samples according to upper-level forecast densities.
+#'
+#' @importFrom fabletools forecast distribution_var
+#' @importFrom distributional generate dist_sample support
 #' @importFrom stats density
-#' @importFrom purrr map2
-#' @importFrom vctrs vec_c vec_slice
-#' @import bayesRecon
-#' @import dplyr 
-#' @import fable
-#' @import tsibble
-#' @import fabletools
-# @importFrom bayesRecon .check_weights .resample
-#' 
-#' @method forecast lst_bayesRecon_BUIS 
-#' 
-#' 
-#' 
-#' @param object TODO
-#' @param key_data TODO
-#' @param point_forecast TODO 
-#' @param new_data TODO
-#' @param n_samples number of samples for output distribution
-#' @param ... extra parameters to be passed on.
-#' 
-#' @description takes a list of of models and returns a list of reconciled models
+#' @importFrom bayesRecon .check_hierarchical .core_reconc_BUIS .get_HG
+#'
+#' @method forecast lst_bayesRecon_BUIS
+#'
+#' @param object An object of class `lst_bayesRecon_BUIS` containing fitted models.
+#' @param key_data A keyed data frame from `fabletools`.
+#' @param point_forecast A list of point forecast functions (default: `list(.mean = mean)`).
+#' @param new_data Optional new data for forecasting (not currently used).
+#' @param ... Additional arguments passed to other methods.
+#'
+#' @return A fable object with BUIS-reconciled distributions and point forecasts.
+#'
+#' @keywords internal
 #' @export
 forecast.lst_bayesRecon_BUIS <- function(
   object,
   key_data,
   point_forecast = list(.mean = mean),
   new_data = NULL,
-  n_samples = 1000,
   ...
 ) {
-  # browser()
   # Take models from fabletools, and prepare for BUIS
-  # build_key_data_smat, does this create the aggregation matrix from key_data encoding, created by aggregate_key function.
-  agg_data <- fabletools:::build_key_data_smat(key_data)
-  S <- matrix(
-    0L,
-    nrow = length(agg_data$agg),
-    ncol = max(vctrs::vec_c(!!!agg_data$agg))
-  )
-  S[
-    length(agg_data$agg) *
-      (vctrs::vec_c(!!!agg_data$agg) - 1) +
-      rep(seq_along(agg_data$agg), lengths(agg_data$agg))
-  ] <- 1L
-
-  # applies the next method ("lst_mdl", in class definition above) to extract the fitted models.
+  # Produce the structural matrix from the key_data structure
+  S <- fabletools::coherent_smat(key_data)
+  
+  # core_reconc_BUIS <- getFromNamespace(".core_reconc_BUIS", "bayesRecon")
+  # get_HG <- getFromNamespace(".get_HG", "bayesRecon")
+  
+  # applies the next method ("mdl_lst", in class definition above) to extract the fitted models.
   fc <- NextMethod()
-
+  
   # Series of lapply to extract the parameters of the distribution
-  fc_dist <- lapply(fc, function(x) x[[fabletools::distribution_var(x)]])
-
+  fc_dist <- lapply(fc, function(x) x[[distribution_var(x)]])
+  
   ##### START OUR REWRITE OF reconc_BUIS() with distributional
-  upr_ts <- which(rowSums(S) > 1)
-  btm_ts <- which(rowSums(S) == 1)
-  A <- S[rowSums(S) > 1, , drop = FALSE]
-  # The next two lines do indexing magic to return base_forecasts in the proper order for BUIS
-  btm_idx <- apply(S[btm_ts, , drop = FALSE], 1, \(x) which(as.logical(x)))
-  base_forecast_h <- transpose_vec(fc_dist[c(upr_ts, btm_ts[btm_idx])])
-
+  hier <- get_hier(S, fc_dist)
+  A <- hier$A
+  base_forecast_h <- hier$base_forecast_h
+  n_upr <- hier$n_upr
+  n_btm <- hier$n_btm
+  upr_ts <- hier$upr_ts
+  btm_ts <- hier$btm_ts
+  btm_idx <- hier$btm_idx
+  
+  # Check that if bottom are continuous, then all forecasts are
+  for (h in seq_along(base_forecast_h)) {
+    supp <- base_forecast_h[[h]] |> support()
+    if (
+      any(supp[-seq_len(n_upr)] |> format() |> names() %in% c("R", "R+")) && 
+        !all(supp[seq_len(n_upr)] |> format() |> names() %in% c("R", "R+"))
+      ) {
+      stop("If bottom forecasts are continuous, upper forecasts must be continuous too.")
+    }
+  }
+  
+  # Get a core parameter from the object attributes
+  n_samples <- attr(object, "n_samples")
+  
   # For all horizon steps ahead, apply independently
   fc_dist <- lapply(base_forecast_h, function(base_forecasts) {
-
-    # Save dimensions
-    n_upper = nrow(A)
-    n_bottom = ncol(A)
-    n_tot <- length(base_forecasts)
-
+    
     # save two lists of upper and bottom fc
-    upper_fc <- base_forecasts[seq_len(n_upper)]
-    bottom_fc <- base_forecasts[-seq_len(n_upper)]
+    upper_fc <- base_forecasts[seq_len(n_upr)]
+    bottom_fc <- base_forecasts[-seq_len(n_upr)]
 
-    # sample from bottom fc
-    B <- bottom_fc |> distributional::generate(times = n_samples)
-    # make B a matrix
-    B <- do.call(cbind, B)
+    # sample from bottom fc and make it a matrix
+    B <- bottom_fc |> generate(times = n_samples) |> do.call(what=cbind)
 
-    # TODO: BUIS CURRENTLY IMPLEMENTED ONLY for hierarchies!
-    H <- A
-
-    # distributional:::density.dist_sample
-    # distributional:::density.dist_normal
-
-    for (hi in 1:nrow(H)) {
-      c = H[hi,]
-      b_mask = (c != 0)
-      # Compute weights by evaluating the upper densities
-      # distributional needs a numeric to apply density to many values
-      weights = stats::density(upper_fc, as.numeric(B %*% c))[[1L]]
-      # Make weights a matrix
-      weights <- matrix(weights, ncol = 1)
-
-      # Checks on weights are inherited from bayesRecon
-      check_weights.res = bayesRecon:::.check_weights(weights)
-      # TODO:  Ifs are commented, check if they work
-      # if (check_weights.res$warning & !suppress_warnings) {
-      #   warning_msg = check_weights.res$warning_msg
-      #   # add information to the warning message
-      #   upper_fromA_i = which(lapply(seq_len(nrow(A)), function(i) sum(abs(A[i,] - c))) == 0)
-      #   for (wmsg in warning_msg) {
-      #     wmsg = paste(wmsg, paste0("Check the upper forecast at index: ", upper_fromA_i,"."))
-      #     warning(wmsg)
-      #   }
-      # }
-      # if(check_weights.res$warning & (1 %in% check_weights.res$warning_code)){
-      #  next
-      # }
-      B[, b_mask] = bayesRecon:::.resample(B[, b_mask], weights)
+    is.hier = .check_hierarchical(A)
+    if(is.hier){
+      H <- A
+      G <- NULL
+      upp_base_H = upper_fc
+      upp_base_G = NULL
+      in_typeH = NULL
+      distr_H  = NULL
+      in_typeG = NULL
+      distr_G  = NULL
+    }else{
+      get_HG.res = .get_HG(A, upper_fc, rep(0, n_upr), rep(0, n_upr))
+      H = get_HG.res$H
+      upp_base_H = get_HG.res$Hv
+      G = get_HG.res$G
+      upp_base_G = get_HG.res$Gv
+      in_typeH = NULL
+      distr_H  = NULL
+      in_typeG = NULL
+      distr_G  = NULL
     }
 
-    B = t(B)
-    U = A %*% B
-    Y_reconc = rbind(U, B)
+    .comp_w_distributional <- function(b, u,    
+                                       in_type_ = NULL, 
+                                       distr_ = NULL){
+      return(density(u, as.numeric(b))[[1L]])
+    }
 
-    distributional::dist_sample(split(Y_reconc, row(Y_reconc)))
-    ###### END REWRITE
+    out = .core_reconc_BUIS(A = A, H = H, G = G, B = B,
+                          upper_base_fc_H = upp_base_H,
+                          in_typeH = in_typeH, distr_H = distr_H,
+                          upper_base_fc_G = upp_base_G,
+                          in_typeG = in_typeG, distr_G = distr_G,
+                          .comp_w = .comp_w_distributional,
+                          return_upper = TRUE
+                          )
+
+    Y_reconc = rbind(out$upper_rec_samples, out$bottom_rec_samples)
+    return(dist_sample(split(Y_reconc, row(Y_reconc))))
+    ### END REWRITE
   })
-
-  # Old code to extract from the models the mean and sd manually. 
-  # If we use distributional this is not needed
-  # fc_param <- lapply(fc_dist, distributional::parameters)
-  # fc_param <- lapply(fc_param, `names<-`, c("mean", "sd"))
-  # fc_param <- lapply(fc_param, dplyr::slice, 1L)
-
-  # fc_family <- lapply(fc_dist, family)
-
-  # res <- reconc_BUIS(
-  #   S[rowSums(S) > 1, , drop = FALSE],
-  #   c(fc_param[upr_ts], fc_param[btm_ts][btm_idx]),
-  #   in_type = "params",
-  #   distr = "gaussian"
-  # )
-
-  # split(res$reconciled_samples, row(res$reconciled_samples)) |>
-  #   lapply(list) |>
-  #   lapply(distributional::dist_sample)
 
   # Fable needs the horizon and models in a different format
   # Invert horizon <-> model. 
@@ -168,16 +152,5 @@ forecast.lst_bayesRecon_BUIS <- function(
   # fable takes in input series in any arbitrary position so we need to invert back
   # Invert <A/B> smat ordering to arbitrary key_data order
   fc_dist <- fc_dist[order(c(upr_ts, btm_ts[btm_idx]))]
-
-  # The code below is Mitch magic that makes the returned object compatible with fable pipeline
-  # you can copy paste this in other functions
-  # In the next iteration of fable this will become a proper function 
-  # (or it won't be needed anymore because it will be handled outside of the reconcile functions)
-  purrr::map2(fc, fc_dist, function(fc, dist) {
-    dimnames(dist) <- dimnames(fc[[fabletools::distribution_var(fc)]])
-    fc[[fabletools::distribution_var(fc)]] <- dist
-    point_fc <- fabletools:::compute_point_forecasts(dist, point_forecast)
-    fc[names(point_fc)] <- point_fc
-    fc
-  })
+  get_output_fc(fc, fc_dist, point_forecast)
 }

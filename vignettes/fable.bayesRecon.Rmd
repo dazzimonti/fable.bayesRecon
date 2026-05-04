@@ -1,0 +1,185 @@
+---
+title: "Forecasts reconciliation with fable.bayesRecon"
+output: rmarkdown::html_vignette
+bibliography: references.bib
+vignette: >
+  %\VignetteIndexEntry{Forecasts reconciliation with fable.bayesRecon}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoded{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(tibble.width = Inf, knitr.kable.NA = "")
+
+# Helper to render fabletools tables as HTML-safe kable
+kable <- function(x, ...) {
+  x |>
+    dplyr::mutate(dplyr::across(
+      where(~ inherits(.x, "agg_vec")),
+      ~ gsub("<", "&lt;", gsub(">", "&gt;", as.character(.x)))
+    )) |>
+    knitr::kable(...)
+}
+```
+
+
+## Introduction
+
+This vignette shows how to use the forecast reconciliation methods implemented in the `fable.bayesRecon` package.
+In particular, we will apply t-Rec method [@carrara2025] to the `swiss_tourism` dataset, which contains monthly counts of nightly stays in Switzerland, aggregated by Canton. 
+
+The method t-Rec is implemented by the function `bayesRecon_t()`, which can be used within the `reconcile()` function of `fabletools` to specify the reconciliation strategy.
+
+First, we load the required packages:
+
+```{r libraries}
+library(bayesRecon)
+library(dplyr)
+library(tsibble)
+library(fable)
+library(fabletools)
+library(fable.bayesRecon)
+library(ggplot2)
+library(scales)
+```
+
+
+## Data preparation
+
+Let's import the data in the tsibble format. To do so, we follow these steps:
+
+1. Load the `swiss_tourism` dataset from the `bayesRecon` package. This is a list containing the `mts` (multivariate time series) object, the aggregation matrix and the size of the hierarchy. 
+2. Take the `mts` component of the list, which contains the time series data.
+3. The first column contains the aggregated data for all cantons; we will drop it for now and we will reconstruct it later.
+4. Convert the remaining time series into a tsibble using `as_tsibble()`.
+5. Optionally, rename the columns for clarity with `rename()`.
+6. Aggregate the data by summing the number of tourist in each canton, using `aggregate_key()`.
+
+
+```{r data}
+data <- swiss_tourism$ts[, -1, drop = FALSE] |>             # Remove 1st column
+  as_tsibble() |>                                           # Convert in tsibble
+  rename(Month = index, Canton = key, Tourists = value) |>  # Rename
+  aggregate_key(Canton, Tourists = sum(Tourists))           # Aggregate all cantons
+
+data |>  head(5) |> kable()
+```
+
+The resulting object `data`, contains time series, stacked vertically, with the time index (column `Month`),  the grouping variable (column `Canton`), and the time series values (column `Tourists`). For aggregated time series, the column `Canton` is set to `<aggregated>`.
+
+Note that `fabletools` allows more complex hierarchies with more grouping variables, however here we reproduce the hierarchy in @carrara2025.
+
+
+
+## Models fitting
+
+We remove from each time series the last 12 observations, which will be used as test set. We use the function `filter()`  and the `yearmonth()` format to specify the cutoff date. This allows us to evaluate the performance of the reconciliation method on the holdout set.
+
+Then, we fit a base forecasting model to the data with an ETS model with additive trend and seasonality; this is implemented in `fable` with function `ETS()`. We will reconcile the results by using the methods `fable.bayesRecon::bayesRecon_t` (t-Rec) and `fabletools::min_trace` (MinT @wickramasuriya2019optimal). 
+
+```{r fit}
+fit <- data |>
+  filter(Month < yearmonth("2024 Feb")) |>                  # Remove test set
+  model(base = ETS(Tourists ~ trend("A") + season("A"))) |> # fit ETS model
+  reconcile(t = bayesRecon_t(base),                         # Reconcile with t-Rec
+            mint = min_trace(base))                         # Reconcile with MinT
+
+fit |> head(5) |> kable()
+```
+
+
+During this step, base forecasts are fitted, but predictions are not generated yet.
+Thus, we specificy the reconciliation strategy to set up the model, however, the actual reconciliation will be performed when we produce forecasts.
+
+## Reconciliation
+
+Given the fitted models, we can now make one-year ahead predictions.
+This is done applying the `forecast()` method to the fitted model.
+The forecast horizon can either be specified as a number of periods (e.g., `h = 12` for 12 months) or as a date (e.g., `h = "1 year"`).
+
+```{r forecast}
+fc <- fit |>
+  forecast(h = "1 year")
+
+# Showing only the one step ahead forecast
+fc |> filter(Month == yearmonth("Feb 2024")) |> head(5) |> kable()
+```
+
+The forecasts object contains both base (`base`) and reconciled forecasts (`mint` or `t`), specified in the `.model` column.
+As for the fitted models, `Canton` and `Month` are respectively the name of the time series and the time index.
+The column `Tourists` contains the probabilistic forecasts, encoded as objects from the `distributional` package. Note that both `base` and `mint` models return Normal distributions while `t` returns a Student-t distribution. 
+Point forecasts are returned as well: the `.mean` column contains the mean of the predictive distribution.
+
+## Summary of results
+
+The following pipe computes the average performance, according to three accuracy measures, grouped by model:
+
+```{r accuracy}
+results <- fc |>
+  accuracy(data, measures = list(RMSSE = RMSSE, MASE = MASE, CRPS = CRPS)) |>
+  group_by(.model) |>
+  summarise(RMSSE = mean(RMSSE), MASE  = mean(MASE), CRPS  = mean(CRPS))
+
+results |> kable(digits = 3)
+```
+
+
+
+## Visualisation
+
+We can visualize the forecasts using the function `autoplot()`. Below we plot the aggregated series showing both base and reconciled forecasts against the actual data. 
+
+```{r plot-aggregated, fig.width=7, fig.height=4}
+# Aggregated series
+fc |>
+  filter(is_aggregated(Canton)) |>
+  autoplot(data, level=95) +
+  scale_y_continuous(labels = label_number(suffix = "K", scale = 1e-3))+
+  labs(title = "Aggregated Swiss Tourism", y = "Tourists", x = NULL) +
+  theme_minimal()
+```
+
+The plot below shows a zoomed in version of the forecasts for the aggregated series. The prediction intevals (95% confidence) of both MinT and t-Rec are smaller than the base forecasts. This is because both methods produce coherent forecasts, which are more accurate than the base forecasts for the aggregated series, as shown in the accuracy table above.
+
+```{r plot-aggregated-zoom, fig.width=7, fig.height=4}
+# Zoom on the forecasts for the aggregated series
+fc |>
+  filter(is_aggregated(Canton)) |>
+  autoplot(data |> filter(Month >= yearmonth("2022 Jan")), level = 95) +
+  scale_y_continuous(labels = label_number(suffix = "K", scale = 1e-3))+
+  labs(title = "Aggregated Swiss Tourism (Jan 2022 - Jan 2025)", y = "Tourists", x = NULL) +
+  theme_minimal()
+```
+
+We now show the forecasts for two bottom level time series, i.e. two cantons: Ticino and Luzern. Both plots are restricted to the last 3 years. 
+
+
+```{r plot-canton1, fig.width=7, fig.height=4}
+# Canton Ticino
+fc |>
+  filter(Canton == "Ticino") |>
+  autoplot(data |> filter(Month >= yearmonth("2022 Jan")),
+           level=95) +
+  scale_y_continuous(labels = label_number(suffix = "K", scale = 1e-3))+
+  labs(title = paste("Canton: Ticino"), y = "Tourists", x = NULL) +
+  theme_minimal()
+```
+
+
+
+```{r plot-canton2, fig.width=7, fig.height=4}
+# Canton Luzern
+fc |>
+  filter(Canton == "Luzern") |>
+  autoplot(data |> filter(Month >= yearmonth("2022 Jan"),
+                                 Canton == "Luzern"),
+           level = 80) +
+  scale_y_continuous(labels = label_number(suffix = "K", scale = 1e-3))+
+  labs(title = paste("Canton: Luzern"), y = "Tourists", x = NULL) +
+  theme_minimal()
+```
+
+
+# References
+<div id="refs"></div>

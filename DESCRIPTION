@@ -7,11 +7,21 @@ Authors@R:
              role = c("aut","cre"),
              email = "dario.azzimonti@gmail.com",
              comment = c(ORCID = "0000-0001-5080-3061")),
+      person(given = "Stefano",
+             family = "Damato",
+             role = c("aut"),
+             email = "stefano.damato@idsia.ch",
+             comment = c(ORCID = "0009-0001-0225-3736")),
       person(given = "Lorenzo",
              family = "Zambon",
              role = c("aut"),
              email = "lorenzo.zambon@idsia.ch",
              comment = c(ORCID = "0000-0002-8939-993X")),
+      person(given = "Chiara",
+             family = "Carrara",
+             role = c("aut"),
+             email = "chiara.carrara03@universitadipavia.it",
+             comment = c(ORCID = "0009-0002-7349-6249")),       
       person(given = "Giorgio",
              family = "Corani",
              role = c("aut"),
@@ -21,17 +31,27 @@ Description: A fable wrapper that implements the bayesRecon utilities in the fab
 License: LGPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
     stats,
     bayesRecon,
-    fabletools,
+    fabletools (>= 0.7.0),
     purrr,
     vctrs,
     distributional,
     dplyr,
-    fable,
-    tsibble
+    tsibble,
+    rlang
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    cli,
+    fable,
+    tsibbledata,
+    ggplot2,
+    scales,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
 Config/testthat/edition: 3
+Depends: 
+    R (>= 4.1)

@@ -1,3 +1,7 @@
 ^fable\.bayesRecon\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
+^README\.Rmd$
+^reconcile_fbl_list_notes\.md$
+^doc$
+^Meta$
