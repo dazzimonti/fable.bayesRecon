@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/IDSIA/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/IDSIA/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/fable.bayesRecon)](https://CRAN.R-project.org/package=fable.bayesRecon)
 [![Lifecycle:
@@ -14,7 +14,6 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 Status](https://coveralls.io/repos/github/dazzimonti/fable.bayesRecon/badge.svg?branch=main)](https://coveralls.io/github/dazzimonti/fable.bayesRecon?branch=main)
 [![License: LGPL (\>=
 3)](https://img.shields.io/badge/license-LGPL%20(%3E%3D%203)-yellow.svg)](https://www.gnu.org/licences/lgpl-3.0)
-[![R-CMD-check](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The package `fable.bayesRecon` integrates the probabilistic
