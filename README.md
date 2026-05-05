@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/IDSIA/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/IDSIA/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/fable.bayesRecon)](https://CRAN.R-project.org/package=fable.bayesRecon)
 [![Lifecycle:
@@ -43,7 +43,7 @@ The reconciliation functions are:
 
 ## News
 
-:boom: \[2026-TO-DO\] fable.bayesRecon v0.0.1: first release.
+:boom: \[2026-05-05\] fable.bayesRecon v0.1.0: first CRAN release.
 
 ## Installation
 
@@ -80,7 +80,7 @@ here](https://arxiv.org/abs/2506.19554)
 
 Hyndman, R.J., & Athanasopoulos, G. (2021). *Forecasting: principles and
 practice*. 3rd edition, OTexts: Melbourne, Australia.
-[OTexts.com/fpp3](https://OTexts.com/fpp3). Accessed on 20/04/2026.
+[OTexts.com/fpp3](https://OTexts.com/fpp3/). Accessed on 05/05/2026.
 
 Zambon, L., Azzimonti, D. & Corani, G. (2024). *Efficient probabilistic
 reconciliation of forecasts for real-valued and count time series*.

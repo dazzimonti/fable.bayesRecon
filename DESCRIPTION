@@ -1,10 +1,11 @@
 Package: fable.bayesRecon
-Title: A fable wrapper for bayesRecon
-Version: 0.0.1
+Date: 2026-05-05
+Title: BAyesian reCONciliation in the 'fable' Framework
+Version: 0.1.0
 Authors@R:
     c(person(given = "Dario",
              family = "Azzimonti",
-             role = c("aut","cre"),
+             role = c("aut","cre","cph"),
              email = "dario.azzimonti@gmail.com",
              comment = c(ORCID = "0000-0001-5080-3061")),
       person(given = "Stefano",
@@ -27,8 +28,17 @@ Authors@R:
              role = c("aut"),
              email = "giorgio.corani@idsia.ch",
              comment = c(ORCID = "0000-0002-1541-8384")))
-Description: A fable wrapper that implements the bayesRecon utilities in the fable framework. The reconciliation functions available in bayesRecon are implemented as a reconcile verb. 
+Description: Implements the 'bayesRecon' probabilistic reconciliation methods
+    within the 'fable' framework for hierarchical time series forecasting.
+    Reconciliation methods are accessed via the 'reconcile' verb, following
+    'fable' conventions. For methodological background, see Corani et al. (2021)
+    <doi:10.1007/978-3-030-67664-3_13>, Zambon et al. (2024a)
+    <doi:10.1007/s11222-023-10343-y>, Zambon et al. (2024b)
+    <https://proceedings.mlr.press/v244/zambon24a.html>, and Carrara et al.
+    (2025) <doi:10.48550/arXiv.2506.19554>.
 License: LGPL (>= 3)
+URL: https://github.com/dazzimonti/fable.bayesRecon
+BugReports: https://github.com/dazzimonti/fable.bayesRecon/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports:
