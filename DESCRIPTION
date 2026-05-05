@@ -1,5 +1,6 @@
 Package: fable.bayesRecon
-Title: A fable wrapper for bayesRecon
+Date: 2026-05-05
+Title: BAyesian reCONciliation in the fable framework
 Version: 0.0.1
 Authors@R:
     c(person(given = "Dario",

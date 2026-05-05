@@ -44,7 +44,7 @@ The reconciliation functions are:
 ## News
 
 
-:boom: [2026-TO-DO] fable.bayesRecon v0.0.1: first release. 
+:boom: [2026-05-05] fable.bayesRecon v0.1.0: first CRAN release. 
 
 
 ## Installation
