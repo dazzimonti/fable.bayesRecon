@@ -37,5 +37,5 @@ PMLR 244:4078-4095. \url{https://proceedings.mlr.press/v244/zambon24a.html}.
 }
 \seealso{
 \code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}},
-\code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_MixCond()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_TDcond()}}
+\code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}, \code{\link[bayesRecon:reconc_MixCond]{bayesRecon::reconc_MixCond()}}, \code{\link[bayesRecon:reconc_TDcond]{bayesRecon::reconc_TDcond()}}
 }

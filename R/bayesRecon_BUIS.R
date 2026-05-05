@@ -77,13 +77,13 @@ forecast.lst_bayesRecon_BUIS <- function(
   upr_ts <- hier$upr_ts
   btm_ts <- hier$btm_ts
   btm_idx <- hier$btm_idx
-  
+  # browser()
   # Check that if bottom are continuous, then all forecasts are
   for (h in seq_along(base_forecast_h)) {
     supp <- base_forecast_h[[h]] |> support()
     if (
-      any(supp[-seq_len(n_upr)] |> format() |> names() %in% c("R", "R+")) && 
-        !all(supp[seq_len(n_upr)] |> format() |> names() %in% c("R", "R+"))
+      any(supp[-seq_len(n_upr)] |> format()   %in% c("R", "R+")) && 
+        !all(supp[seq_len(n_upr)] |> format() %in% c("R", "R+"))
       ) {
       stop("If bottom forecasts are continuous, upper forecasts must be continuous too.")
     }

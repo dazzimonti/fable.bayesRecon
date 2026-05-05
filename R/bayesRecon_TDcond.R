@@ -148,7 +148,7 @@ make_PMF <- function(dist, negative_to_zero = FALSE, toll = 1e-9, alpha_smoothin
     }
   }
   # Identify real-supported distributions
-  int_val <- supp |> format() |> names() %in% c("N0", "N+", "Z")
+  int_val <- supp |> format() %in% c("N0", "N+", "Z")
   if (any(!int_val)){
     wm <- c(wm, "Non-integer support obtained via cdf rounding.")
   }
