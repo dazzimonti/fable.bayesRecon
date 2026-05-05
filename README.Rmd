@@ -75,7 +75,7 @@ arXiv preprint arXiv:2506.19554.
 [Available here](https://arxiv.org/abs/2506.19554)
 
 Hyndman, R.J., & Athanasopoulos, G. (2021).
-*Forecasting: principles and practice*. 3rd edition, OTexts: Melbourne, Australia. [OTexts.com/fpp3](https://OTexts.com/fpp3). Accessed on 20/04/2026.
+*Forecasting: principles and practice*. 3rd edition, OTexts: Melbourne, Australia. [OTexts.com/fpp3](https://OTexts.com/fpp3/). Accessed on 05/05/2026.
 
 Zambon, L., Azzimonti, D. & Corani, G. (2024).
 *Efficient probabilistic reconciliation of forecasts for real-valued and count time series*.
