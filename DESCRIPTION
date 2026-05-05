@@ -31,7 +31,6 @@ Description: A fable wrapper that implements the bayesRecon utilities in the fab
 License: LGPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
     stats,
     bayesRecon,
@@ -55,3 +54,4 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 Depends: 
     R (>= 4.1)
+Config/roxygen2/version: 8.0.0
