@@ -1,3 +1,3 @@
-# fable.bayesRecon 0.0.1
+# fable.bayesRecon 0.1.0
 
 * Initial CRAN submission.
