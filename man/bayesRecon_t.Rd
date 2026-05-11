@@ -20,6 +20,15 @@ via seasonal naive residuals. If not provided, the frequency is inferred from th
 \item \code{l_shr}: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals.
 }}
 }
+\value{
+A model specification of class \code{"bayesRecon_t"}
+(inheriting from \code{"mdl_lst"}) to be passed to
+\code{\link[fabletools]{reconcile}}. The reconciliation is
+performed when \code{\link[fabletools]{forecast}} is called on
+the resulting mable (a model table). The forecast output is a \code{fable} object
+containing reconciled probabilistic forecasts represented as
+sample distributions (\code{\link[distributional]{dist_student_t}}).
+}
 \description{
 Specifies t-Rec reconciliation for use within \code{reconcile()}.
 
@@ -34,6 +43,26 @@ yielding a multivariate t reconciled distribution.
 
 Reconciliation is performed when \code{forecast()} is called on the resulting model.
 Marginal reconciled forecasts follow a Student-t distribution.
+}
+\examples{
+library(fable)
+library(fabletools)
+library(tsibble)
+library(fable.bayesRecon)
+
+# Small hierarchical example using tourism data
+tourism_small <- tsibble::tourism |>
+dplyr::filter(Region == "Melbourne") |> 
+fabletools::aggregate_key(Purpose, Trips = sum(Trips))
+
+fit <- tourism_small |> 
+model(base = ETS(Trips ~ trend("A") + season("A"))) |>
+reconcile(recon = bayesRecon_t(base))
+
+fc <- forecast(fit, h = "2 years")
+fc
+
+
 }
 \references{
 Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance

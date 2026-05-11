@@ -19,6 +19,54 @@
 #' @param n_samples Number of samples to draw from the reconciled distribution.
 #' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
 #' 
+#' @return A model specification of class \code{"bayesRecon_MixCond"} or 
+#'   \code{"bayesRecon_TDcond"} (inheriting from \code{"mdl_lst"}) 
+#'   to be passed to \code{\link[fabletools]{reconcile}}. The reconciliation is
+#'   performed when \code{\link[fabletools]{forecast}} is called on
+#'   the resulting mable (a model table). The forecast output is a \code{fable} object
+#'   containing reconciled probabilistic forecasts represented as
+#'   sample distributions (\code{\link[distributional]{dist_sample}}).
+#' 
+#' @examples
+#' library(tsibble)
+#' library(dplyr)
+#' library(tibble)
+#' library(fable)
+#' library(fabletools)
+#' 
+#' 
+#' # Mixed hierarchy with integer-valued bottom series and one upper aggregate.
+#' # Two low-rate Poisson count series at the bottom; their sum forms the
+#' # continuous-looking upper aggregate. 
+#' set.seed(42)
+#' n <- 60
+#' idx <- tsibble::yearmonth("2019 Jan") + 0:(n - 1)
+#' 
+#' counts <- dplyr::bind_rows(
+#'    tibble::tibble(Month = idx, Item = "A", Sales = rpois(n, lambda = 3)),
+#'    tibble::tibble(Month = idx, Item = "B", Sales = rpois(n, lambda = 5))) |>
+#'    tsibble::as_tsibble(index = Month, key = Item) |>
+#'    fabletools::aggregate_key(Item, Sales = sum(Sales))
+#'    
+#' # Fit a base model on every level, then reconcile via MixCond:
+#' # the upper (aggregated) forecast is treated as Gaussian, while the
+#' # bottom-level forecast samples are treated as discrete via importance
+#' # sampling.
+#' fit <- counts |>
+#' model(base = ETS(Sales)) |>
+#' reconcile(mc = bayesRecon_MixCond(base))
+#' 
+#' \dontrun{
+#' # Alternative reconciliation via TDcond
+#' fit <- counts |>
+#' model(base = ETS(Sales)) |>
+#' reconcile(mc = bayesRecon_TDcond(base))
+#' }
+#' 
+#' fc <- forecast(fit, h = 2)
+#' fc
+#' 
+#' 
 #' @references
 #' Zambon, L., Azzimonti, D., Rubattu, N., Corani, G. (2024).
 #' *Probabilistic reconciliation of mixed-type hierarchical time series*.

@@ -27,6 +27,33 @@
 #' - `criterion`: Criterion for estimating the naive covariance matrix (default: "RSS").
 #' - `l_shr`: Optional shrinkage parameter (between 0 and 1) for the covariance matrix of the residuals. 
 #'
+#' @return A model specification of class \code{"bayesRecon_t"}
+#'   (inheriting from \code{"mdl_lst"}) to be passed to
+#'   \code{\link[fabletools]{reconcile}}. The reconciliation is
+#'   performed when \code{\link[fabletools]{forecast}} is called on
+#'   the resulting mable (a model table). The forecast output is a \code{fable} object
+#'   containing reconciled probabilistic forecasts represented as
+#'   sample distributions (\code{\link[distributional]{dist_student_t}}).
+#'   
+#' @examples 
+#' library(fable)
+#' library(fabletools)
+#' library(tsibble)
+#' library(fable.bayesRecon)
+#' 
+#' # Small hierarchical example using tourism data
+#' tourism_small <- tsibble::tourism |>
+#' dplyr::filter(Region == "Melbourne") |> 
+#' fabletools::aggregate_key(Purpose, Trips = sum(Trips))
+#' 
+#' fit <- tourism_small |> 
+#' model(base = ETS(Trips ~ trend("A") + season("A"))) |>
+#' reconcile(recon = bayesRecon_t(base))
+#' 
+#' fc <- forecast(fit, h = "2 years")
+#' fc
+#'
+#'
 #' @references
 #' Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
 #' matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.

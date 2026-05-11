@@ -9,6 +9,24 @@
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+── R CMD check results ───────────────────────────── fable.bayesRecon 0.1.0 ────
+Duration: 1m 32.9s
 
-* This is a new release.
+❯ checking CRAN incoming feasibility ... [3s/13s] NOTE
+  Maintainer: ‘Dario Azzimonti <dario.azzimonti@gmail.com>’
+  
+  New submission
+
+0 errors ✔ | 0 warnings ✔ | 1 note ✖
+
+
+## Resubmission
+
+This is a resubmission. In response to the previous CRAN review:
+
+* Added \value tags to bayesRecon_BUIS.Rd, bayesRecon_MixCond.Rd, and 
+  bayesRecon_t.Rd describing the class and structure of the returned 
+  model specification objects.
+* Added small executable \examples{} blocks to all three exported 
+  reconciliation functions, using a reduced subset of tsibble::tourism 
+  to keep runtime under a few seconds.
