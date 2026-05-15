@@ -1,6 +1,6 @@
 Package: fable.bayesRecon
 Date: 2026-05-05
-Title: BAyesian reCONciliation in the 'fable' Framework
+Title: Bayesian Reconciliation in the 'fable' Framework
 Version: 0.1.0
 Authors@R:
     c(person(given = "Dario",
@@ -30,7 +30,7 @@ Authors@R:
              comment = c(ORCID = "0000-0002-1541-8384")))
 Description: Implements the 'bayesRecon' probabilistic reconciliation methods
     within the 'fable' framework for hierarchical time series forecasting.
-    Reconciliation methods are accessed via the 'reconcile' verb, following
+    Bayesian reconciliation (bayesRecon) methods are accessed via the 'reconcile' verb, following
     'fable' conventions. For methodological background, see Corani et al. (2021)
     <doi:10.1007/978-3-030-67664-3_13>, Zambon et al. (2024a)
     <doi:10.1007/s11222-023-10343-y>, Zambon et al. (2024b)
