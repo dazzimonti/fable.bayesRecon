@@ -30,3 +30,8 @@ This is a resubmission. In response to the previous CRAN review:
 * Added small executable \examples{} blocks to all three exported 
   reconciliation functions, using a reduced subset of tsibble::tourism 
   to keep runtime under a few seconds.
+* Changed title in DESCRIPTION to conform with CRAN title case requirements;
+  Updated Description field in the DESCRIPTION file to address Uwe's comments.
+* In `bayesRecon_MixCond.Rd`, replaced the unnecessary `\dontrun{}` wrapping by 
+  unwrapping the portion of the example because it is executable in < 5 sec. 
+

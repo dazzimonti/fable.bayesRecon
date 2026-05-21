@@ -56,12 +56,12 @@
 #' model(base = ETS(Sales)) |>
 #' reconcile(mc = bayesRecon_MixCond(base))
 #' 
-#' \dontrun{
+#' 
 #' # Alternative reconciliation via TDcond
-#' fit <- counts |>
+#' fit_TDcond <- counts |>
 #' model(base = ETS(Sales)) |>
 #' reconcile(mc = bayesRecon_TDcond(base))
-#' }
+#' 
 #' 
 #' fc <- forecast(fit, h = 2)
 #' fc
