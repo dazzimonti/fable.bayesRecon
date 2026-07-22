@@ -32,6 +32,6 @@ This is a resubmission. In response to the previous CRAN review:
   to keep runtime under a few seconds.
 * Changed title in DESCRIPTION to conform with CRAN title case requirements;
   Updated Description field in the DESCRIPTION file to address Uwe's comments.
-* In `bayesRecon_MixCond.Rd`, replaced the unnecessary `\dontrun{}` wrapping by 
-  unwrapping the portion of the example because it is executable in < 5 sec. 
+* In `bayesRecon_MixCond.Rd`, replaced the unnecessary `\dontrun{}` by 
+  unwrapping those lines of code in the example because they are executable in < 5 sec. 
 
