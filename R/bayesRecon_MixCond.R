@@ -30,42 +30,67 @@
 #' @examples
 #' library(tsibble)
 #' library(dplyr)
-#' library(tibble)
 #' library(fable)
 #' library(fabletools)
+#' library(fable.intermittent)
 #' 
 #' 
-#' # Mixed hierarchy with integer-valued bottom series and one upper aggregate.
-#' # Two low-rate Poisson count series at the bottom; their sum forms the
-#' # continuous-looking upper aggregate. 
-#' set.seed(42)
-#' n <- 60
-#' idx <- tsibble::yearmonth("2019 Jan") + 0:(n - 1)
+#' # Mixed hierarchy with integer-valued bottom and one upper aggregate, from the `auto` dataset.
+#' # Forecasts with EMPDISTR for bottom base and ETS for smooth base forecasts.
 #' 
-#' counts <- dplyr::bind_rows(
-#'    tibble::tibble(Month = idx, Item = "A", Sales = rpois(n, lambda = 3)),
-#'    tibble::tibble(Month = idx, Item = "B", Sales = rpois(n, lambda = 5))) |>
-#'    tsibble::as_tsibble(index = Month, key = Item) |>
-#'    fabletools::aggregate_key(Item, Sales = sum(Sales))
+#' 
+#' # Helper: split a hierarchy into its upper (aggregated) and bottom (leaf) series so that a
+#' # different base model can be fitted at each level.
+#' hier_filter <- function(data, level = c("upper", "bottom")) {
+#'  level <- match.arg(level)
+#'  key_cols <- tsibble::key_vars(data)
+#'  if (level == "upper") {
+#'    dplyr::filter(data, dplyr::if_any(dplyr::all_of(key_cols), fabletools::is_aggregated))
+#'  } else {
+#'    dplyr::filter(data, !dplyr::if_any(dplyr::all_of(key_cols), fabletools::is_aggregated))
+#'  }
+#'}
+#' 
+#' # Build a small two-level hierarchy from a handful of auto spare-part series. 
+#' # The four series become the bottom level; their sum is the upper aggregate.
+#' sel <- c("TS1461", "TS2953", "TS333", "TS2710")
+#' data <- auto |>
+#'  dplyr::filter(series_id %in% sel) |>
+#'  fabletools::aggregate_key(series_id, value = sum(value))
 #'    
-#' # Fit a base model on every level, then reconcile via MixCond:
-#' # the upper (aggregated) forecast is treated as Gaussian, while the
-#' # bottom-level forecast samples are treated as discrete via importance
-#' # sampling.
-#' fit <- counts |>
-#' model(base = ETS(Sales)) |>
-#' reconcile(mc = bayesRecon_MixCond(base))
+#' 
+#' # Hold out the last 6 months for forecasting.
+#' train <- data |> dplyr::filter(index < tsibble::yearmonth("2011 Jul"))
+#' 
+#' # Base forecasts: a smooth (Gaussian) model on the continuous-looking upper aggregate, 
+#' # and the EMPDISTR non-parametric count model on the intermittent bottom series.
+#' fit_upper <- train |>
+#'   hier_filter("upper") |>
+#'   fabletools::model(base = fable::ETS(value))
+#' 
+#' fit_bottom <- train |>
+#'   hier_filter("bottom") |>
+#'   fabletools::model(base = fable.intermittent::EMPDISTR(value))
+#' 
+#' fit <- dplyr::bind_rows(fit_upper, fit_bottom)
+#' print(fit)
 #' 
 #' 
-#' # Alternative reconciliation via TDcond
-#' fit_TDcond <- counts |>
-#' model(base = ETS(Sales)) |>
-#' reconcile(mc = bayesRecon_TDcond(base))
+#' # Reconcile the mixed hierarchy via Mix-Cond and Top-Down conditioning.
+#' fit <- fit |>
+#'   fabletools::reconcile(
+#'     mixcond = fable.bayesRecon::bayesRecon_MixCond(base),
+#'     tdcond  = fable.bayesRecon::bayesRecon_TDcond(base)
+#'   )
 #' 
 #' 
-#' fc <- forecast(fit, h = 2)
-#' fc
+#' fc <- fabletools::forecast(fit, h = 6)
+#' print(fc)
 #' 
+#' if (requireNamespace("ggtime", quietly = TRUE)) {
+#'  library(ggtime)
+#'  fc |> ggtime::autoplot(data, level=c(95))
+#' }
 #' 
 #' @references
 #' Zambon, L., Azzimonti, D., Rubattu, N., Corani, G. (2024).
