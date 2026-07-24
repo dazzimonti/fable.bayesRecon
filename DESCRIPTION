@@ -61,6 +61,7 @@ Suggests:
     tibble,
     ggplot2,
     scales,
+    tidyr,
     knitr,
     rmarkdown
 VignetteBuilder: knitr

@@ -47,6 +47,13 @@ The reconciliation functions are:
 
 ## Installation
 
+You can install the **stable** version on [R
+CRAN](https://cran.r-project.org/package=fable.bayesRecon)
+
+``` r
+install.packages("fable.bayesRecon", dependencies = TRUE)
+```
+
 You can install the **development** version from
 [GitHub](https://github.com/dazzimonti/fable.bayesRecon):
 
@@ -70,6 +77,120 @@ usage example; refer to the package documentation for more details on
 the reconciliation methods and their parameters. See the book Hyndman
 and Athanasopoulos (2021) for a general introduction to forecasting with
 `fable` and `fabletools`.
+
+### Example 1: Gaussian forecast distributions
+
+<img src="./man/figures/hier_small_README.png" alt="" width="50%" style="display: block; margin: auto;" />
+
+<br />
+
+Let us consider a hierarchy with 4 bottom time series and 3 upper time
+series, as shown in the figure above.
+
+In this example, we assume that the base forecasts are multivariate
+Gaussian, which is a common choice for real-valued time series.
+
+To generate the hierarchical time series, we first randomly simulate the
+bottom series using an AR(1) process and then aggregate them using the
+function `aggregate_key` from `fabletools`.
+
+``` r
+library(tsibble)
+library(fabletools)
+library(dplyr)
+set.seed(1234)
+
+# Simulate the 4 bottom series from independent AR(1) processes. The bottom
+# series are indexed by two nested keys (major/minor), matching the hierarchy
+# Total -> {A, B} -> {AA, AB, BA, BB} encoded in A above. The time index is
+# monthly, starting in January 2015.
+n_obs <- 12  # length of the time series
+month_idx <- yearmonth("2015 Jan") + 0:(n_obs - 1)
+bottom_keys <- expand.grid(minor = c("A", "B"), major = c("A", "B"))
+
+bottom_data <- data.frame(
+  Month = rep(month_idx, times = nrow(bottom_keys)),
+  major = rep(bottom_keys$major, each = n_obs),
+  minor = rep(bottom_keys$minor, each = n_obs),
+  value = as.numeric(sapply(seq_len(nrow(bottom_keys)), function(j)
+    arima.sim(model = list(ar = 0.8), n = n_obs, sd = 0.5)))
+) |>
+  as_tsibble(index = Month, key = c(major, minor))
+
+# Aggregate to obtain the upper series (Total, and majors A/B)
+data <- bottom_data |>
+  aggregate_key(major/minor, value = sum(value))
+```
+
+We compute the base forecasts using an ETS model with Gaussian
+predictive distribution. We then analytically compute the reconciled
+forecasts via conditioning using the `fable::min_trace` and the
+`fable.bayesRecon::bayesRecon_t` functions. The reconciled forecasts
+produced by `min_trace` are multivariate Gaussian, and they are
+equivalent to Gaussian reconciliation via conditioning ([Zambon et
+al. 2024](https://doi.org/10.1016/j.ijforecast.2023.12.004)). The
+`bayesRecon_t` method adopts a Bayesian approach to account for the
+uncertainty of the covariance matrix of the base forecasts; the
+reconciled forecasts, which are multivariate Student-t, are typically
+better calibrated (see [Carrara et
+al. 2025](https://arxiv.org/abs/2506.19554) for details).
+
+``` r
+library(fable)
+library(fable.bayesRecon)
+
+fit <- data |>
+  model(base = ETS(value)) |> # fit ETS model
+  reconcile(t = bayesRecon_t(base,freq =1),                 # Reconcile with t-Rec
+    mint = min_trace(base))                         # Reconcile with MinT
+
+fit |> knitr::kable()
+```
+
+| major        | minor        | base           | t              | mint           |
+|:-------------|:-------------|:---------------|:---------------|:---------------|
+| A            | A            | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| A            | B            | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| A            | <aggregated> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| B            | A            | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| B            | B            | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| B            | <aggregated> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+| <aggregated> | <aggregated> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
+
+For simplicity, we only compute one-step-ahead forecasts, but the same
+procedure can be applied to multi-step-ahead forecasts.
+
+``` r
+fc <- fit |>
+  forecast(h = "1 month")
+
+# One row per model, one column per series, showing the point forecast (.mean)
+fc |>
+  as_tibble() |>
+  mutate(series = dplyr::case_when(
+    is_aggregated(major) & is_aggregated(minor) ~ "T",
+    is_aggregated(minor) ~ as.character(major),
+    TRUE ~ paste0(major, minor)
+  )) |>
+  mutate(.model = factor(.model, levels = c("base", "mint", "t"))) |>
+  select(.model, series, .mean) |>
+  tidyr::pivot_wider(names_from = series, values_from = .mean) |>
+  arrange(.model) |>
+  select(.model, T, A, B, AA, AB, BA, BB) |>
+  knitr::kable(digits = 2)
+```
+
+| .model |     T |     A |     B |    AA |    AB |    BA |    BB |
+|:-------|------:|------:|------:|------:|------:|------:|------:|
+| base   | -2.64 | -2.24 | -0.35 | -2.06 | -0.18 | -0.19 | -0.47 |
+| mint   | -2.71 | -2.23 | -0.48 | -2.06 | -0.17 | -0.14 | -0.35 |
+| t      | -2.88 | -2.37 | -0.50 | -2.02 | -0.36 | -0.11 | -0.39 |
+
+Finally, we compare the reconciled forecast distributions for the top
+series T obtained with the two methods by plotting their marginal
+densities.
+
+<img src="man/figures/README-unnamed-chunk-6-1.png" alt="" width="100%" />
 
 ## References
 

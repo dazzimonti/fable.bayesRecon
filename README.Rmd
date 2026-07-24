@@ -9,7 +9,9 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "100%",
+  message = FALSE,
+  warning = FALSE
 )
 ```
 
@@ -49,6 +51,13 @@ The reconciliation functions are:
 
 ## Installation
 
+You can install the **stable** version on [R
+CRAN](https://cran.r-project.org/package=fable.bayesRecon)
+
+``` r
+install.packages("fable.bayesRecon", dependencies = TRUE)
+```
+
 You can install the **development** version from
 [GitHub](https://github.com/dazzimonti/fable.bayesRecon):
 
@@ -67,6 +76,166 @@ The package follows the standard `fable` workflow:
 4. Produce reconciled probabilistic forecasts with `forecast()`.
 
 We provide in [this vignette](vignettes/fable.bayesRecon.Rmd) a simple usage example; refer to the package documentation for more details on the reconciliation methods and their parameters. See the book Hyndman and Athanasopoulos (2021) for a general introduction to forecasting with `fable` and `fabletools`.
+
+### Example 1: Gaussian forecast distributions
+
+```{r echo=FALSE, out.width='50%', fig.align='center'}
+knitr::include_graphics("./man/figures/hier_small_README.png")
+```
+
+<br />
+
+Let us consider a hierarchy with 4 bottom time series and 3 upper time series, as shown in the figure above.
+
+In this example, we assume that the base forecasts are multivariate Gaussian, 
+which is a common choice for real-valued time series.
+
+To generate the hierarchical time series, we first randomly simulate the bottom series 
+using an AR(1) process and then aggregate them using the function `aggregate_key` from `fabletools`.
+
+```{r}
+library(tsibble)
+library(fabletools)
+library(dplyr)
+set.seed(1234)
+
+# Simulate the 4 bottom series from independent AR(1) processes. The bottom
+# series are indexed by two nested keys (major/minor), matching the hierarchy
+# Total -> {A, B} -> {AA, AB, BA, BB} encoded in A above. The time index is
+# monthly, starting in January 2015.
+n_obs <- 12  # length of the time series
+month_idx <- yearmonth("2015 Jan") + 0:(n_obs - 1)
+bottom_keys <- expand.grid(minor = c("A", "B"), major = c("A", "B"))
+
+bottom_data <- data.frame(
+  Month = rep(month_idx, times = nrow(bottom_keys)),
+  major = rep(bottom_keys$major, each = n_obs),
+  minor = rep(bottom_keys$minor, each = n_obs),
+  value = as.numeric(sapply(seq_len(nrow(bottom_keys)), function(j)
+    arima.sim(model = list(ar = 0.8), n = n_obs, sd = 0.5)))
+) |>
+  as_tsibble(index = Month, key = c(major, minor))
+
+# Aggregate to obtain the upper series (Total, and majors A/B)
+data <- bottom_data |>
+  aggregate_key(major/minor, value = sum(value))
+```
+
+We compute the base forecasts using an ETS model with Gaussian predictive distribution. We then analytically compute the reconciled forecasts via conditioning using the 
+`fable::min_trace` and the `fable.bayesRecon::bayesRecon_t` functions.
+The reconciled forecasts produced by `min_trace` are multivariate Gaussian,
+and they are equivalent to Gaussian reconciliation via conditioning ([Zambon et al. 2024](https://doi.org/10.1016/j.ijforecast.2023.12.004)).
+The `bayesRecon_t` method adopts a Bayesian approach to account for the uncertainty 
+of the covariance matrix of the base forecasts;
+the reconciled forecasts, which are multivariate Student-t, 
+are typically better calibrated (see [Carrara et al. 2025](https://arxiv.org/abs/2506.19554) for details).
+
+
+
+```{r}
+library(fable)
+library(fable.bayesRecon)
+
+fit <- data |>
+  model(base = ETS(value)) |> # fit ETS model
+  reconcile(t = bayesRecon_t(base,freq =1),                 # Reconcile with t-Rec
+    mint = min_trace(base))                         # Reconcile with MinT
+
+fit |> knitr::kable()
+```
+
+For simplicity, we only compute one-step-ahead forecasts, but the same procedure 
+can be applied to multi-step-ahead forecasts.
+
+
+```{r}
+fc <- fit |>
+  forecast(h = "1 month")
+
+# One row per model, one column per series, showing the point forecast (.mean)
+fc |>
+  as_tibble() |>
+  mutate(series = dplyr::case_when(
+    is_aggregated(major) & is_aggregated(minor) ~ "T",
+    is_aggregated(minor) ~ as.character(major),
+    TRUE ~ paste0(major, minor)
+  )) |>
+  mutate(.model = factor(.model, levels = c("base", "mint", "t"))) |>
+  select(.model, series, .mean) |>
+  tidyr::pivot_wider(names_from = series, values_from = .mean) |>
+  arrange(.model) |>
+  select(.model, T, A, B, AA, AB, BA, BB) |>
+  knitr::kable(digits = 2)
+```
+
+Finally, we compare the reconciled forecast distributions for the top series T 
+obtained with the two methods by plotting their marginal densities.
+
+```{r, echo = FALSE}
+library(ggplot2)
+library(distributional)
+
+# Extract the reconciled distributions for the top (Total) series
+dist_var <- distribution_var(fc)
+
+top_fc <- fc |>
+  filter(is_aggregated(major), is_aggregated(minor))
+
+dist_mint <- top_fc |> filter(.model == "mint") |> pull(!!dist_var)
+dist_t    <- top_fc |> filter(.model == "t")    |> pull(!!dist_var)
+
+# x range covering both distributions at the 0.1%-99.9% level
+x_lo <- min(quantile(dist_mint, 0.001)[[1]], quantile(dist_t, 0.001)[[1]])
+x_hi <- max(quantile(dist_mint, 0.999)[[1]], quantile(dist_t, 0.999)[[1]])
+x_seq <- seq(x_lo, x_hi, length.out = 500)
+
+# Densities of the two reconciled forecasts
+df_ex2 <- data.frame(
+  x    = rep(x_seq, 2),
+  dens = c(density(dist_mint, at = x_seq)[[1]],
+           density(dist_t, at = x_seq)[[1]]),
+  type = rep(c("Gaussian reconciled", "t reconciled"), each = length(x_seq))
+)
+
+# Simulate one more step ahead with the same AR(1) process, to obtain a
+# plausible actual value for the top series T at the forecast horizon
+last_bottom <- bottom_data |>
+  as_tibble() |>
+  filter(Month == max(Month)) |>
+  pull(value)
+bottom_actual <- 0.8 * last_bottom + rnorm(4, sd = 0.5)
+T_actual <- sum(bottom_actual)
+
+# Plot the densities
+ggplot(df_ex2, aes(x = x, y = dens)) +
+  geom_line(aes(color = type, linetype = type), linewidth = 1.3) +
+  geom_area(data = subset(df_ex2, type == "Gaussian reconciled"), fill = "#619CFF", alpha = 0.3) +
+  geom_area(data = subset(df_ex2, type == "t reconciled"), fill = "#F8766D", alpha = 0.3) +
+  geom_point(
+    data = data.frame(x = T_actual, y = 0),
+    aes(x = x, y = y, color = "Actual value"),
+    inherit.aes = FALSE,
+    shape = 17, size = 4
+  ) +
+  scale_color_manual(
+    values = c("Gaussian reconciled" = "#619CFF", "t reconciled" = "#F8766D", "Actual value" = "black"),
+    name = NULL
+  ) +
+  scale_linetype_manual(
+    values = c("Gaussian reconciled" = "solid", "t reconciled" = "dashed"),
+    guide = "none"
+  ) +
+  labs(
+    title = "Reconciled forecast distributions for time series T",
+    x = "Value", y = "Density"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title  = element_text(face = "bold"),
+    legend.text = element_text(size = 11)
+  )
+```
+
 
 ## References
 
