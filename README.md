@@ -191,7 +191,7 @@ Finally, we compare the reconciled forecast distributions for the top
 series T obtained with the two methods by plotting their marginal
 densities.
 
-<img src="man/figures/README-unnamed-chunk-7-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-7-1.png" alt="" width="85%" style="display: block; margin: auto;" />
 
 ### Example 2: discrete forecast distributions
 
@@ -293,7 +293,7 @@ Finally, we compare the base and reconciled forecast distributions for
 the top series T, by evaluating the `distributional` generics
 `quantile()` and `density()` on the returned forecast distributions.
 
-<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-15-1.png" alt="" width="85%" style="display: block; margin: auto;" />
 
 ### Example 3: mixed-type forecast distributions
 
@@ -355,7 +355,7 @@ We show a comparison of upper and bottom time series. Even though the
 bottom series are made of low counts, the upper series can be considered
 as real-valued due to the smoothing effect of aggregation.
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" alt="" width="85%" style="display: block; margin: auto;" />
 
 We compute the one-step-ahead base forecasts for the upper series with
 an ETS model (Gaussian predictive distribution) and for the bottom
@@ -435,7 +435,7 @@ al. 2024](https://proceedings.mlr.press/v244/zambon24a.html) for a
 detailed comparison of the two methods for reconciling mixed hierarchies
 of different sizes.
 
-<img src="man/figures/README-unnamed-chunk-25-1.png" alt="" width="100%" />
+<img src="man/figures/README-unnamed-chunk-25-1.png" alt="" width="85%" style="display: block; margin: auto;" />
 
 ## References
 
