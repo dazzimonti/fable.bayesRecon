@@ -14,7 +14,6 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 Status](https://coveralls.io/repos/github/dazzimonti/fable.bayesRecon/badge.svg?branch=main)](https://coveralls.io/github/dazzimonti/fable.bayesRecon?branch=main)
 [![License: LGPL (\>=
 3)](https://img.shields.io/badge/license-LGPL%20(%3E%3D%203)-yellow.svg)](https://www.gnu.org/licences/lgpl-3.0)
-[![R-CMD-check](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dazzimonti/fable.bayesRecon/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The package `fable.bayesRecon` integrates the probabilistic
@@ -31,15 +30,17 @@ The reconciliation functions are:
 - `bayesRecon_t`: reconciliation via conditioning with uncertain
   covariance matrix; the reconciled forecasts are multivariate
   Student-t; this is done analytically.
-- `bayesRecon_BUIS`: reconciliation via conditioning of any
-  probabilistic forecast via importance sampling; this is the
-  recommended option for non-Gaussian base forecasts;
+- `bayesRecon_BUIS`: reconciliation via importance sampling, applicable
+  to any probabilistic forecast; this is the recommended option for
+  non-Gaussian base forecasts;
 - `bayesRecon_MixCond`: reconciliation via conditioning of mixed
   hierarchies, where the upper forecasts are multivariate Gaussian and
-  the bottom forecasts are discrete distributions;
+  the bottom forecasts are discrete distributions; recommended for
+  moderately sized hierarchies;
 - `bayesRecon_TDcond`: reconciliation via top-down conditioning of mixed
   hierarchies, where the upper forecasts are multivariate Gaussian and
-  the bottom forecasts are discrete distributions;
+  the bottom forecasts are discrete distributions; recommended for large
+  hierarchies;
 
 ## News
 
@@ -72,11 +73,11 @@ The package follows the standard `fable` workflow:
 3.  Specify the reconciliation strategy inside `reconcile()`.
 4.  Produce reconciled probabilistic forecasts with `forecast()`.
 
-We provide in [the vignette
-fable.bayesRecon](https://cran.r-project.org/web/packages/fable.bayesRecon/vignettes/fable.bayesRecon.html)
-a simple usage example; refer to the package documentation for more
-details on the reconciliation methods and their parameters. See the book
-Hyndman and Athanasopoulos (2021) for a general introduction to
+The vignette
+[fable.bayesRecon](https://cran.r-project.org/web/packages/fable.bayesRecon/vignettes/fable.bayesRecon.html)
+provides a simple usage example; refer to the package documentation for
+more details on the reconciliation methods and their parameters. See the
+book Hyndman and Athanasopoulos (2021) for a general introduction to
 forecasting with `fable` and `fabletools`.
 
 ## Getting help
@@ -86,7 +87,7 @@ If you encounter a bug, please file a minimal reproducible example on
 
 ## Examples from `bayesRecon`
 
-In this section we reproduce the examples found `bayesRecon`’s Readme
+In this section we reproduce the examples found in `bayesRecon`’s README
 file in the fable framework. You can use this section as a guiding
 example to convert your code from `bayesRecon` to `fable.bayesRecon`.
 
@@ -153,7 +154,7 @@ library(fable.bayesRecon)
 
 fit <- data |>
   model(base = ETS(value)) |> # fit ETS model
-  reconcile(t = bayesRecon_t(base,freq =1),                 # Reconcile with t-Rec
+  reconcile(t = bayesRecon_t(base, freq = 1),               # Reconcile with t-Rec
             mint = min_trace(base))                         # Reconcile with MinT
 
 fit |> knitr::kable()
@@ -169,8 +170,8 @@ fit |> knitr::kable()
 | B            | <aggregated> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
 | <aggregated> | <aggregated> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> | \<ETS(A,N,N)\> |
 
-For simplicity, we only compute one-step-ahead forecasts, by changing
-the value in the parameter `h` below we can compute multi-step-ahead
+For simplicity, we only compute one-step-ahead forecasts; by changing
+the value of the parameter `h` below, we can compute multi-step-ahead
 forecasts with the same code.
 
 ``` r
@@ -195,7 +196,7 @@ densities.
 
 ### Example 2: discrete forecast distributions
 
-We consider the same hierarchy of Example 1; however, we assume that the
+We consider the same hierarchy as Example 1; however, we assume that the
 base forecasts are discrete, which is a common choice for count time
 series.
 
@@ -251,12 +252,12 @@ desired summary (mean, quantiles, etc.) can be computed.
 library(fable.intermittent)
 
 fit <- data |>
-  model(base = GAMPOISB(value)) |>          # fit GAMPOISB for the full hierarchy
-  reconcile(buis = bayesRecon_BUIS(base))   # reconcile with BUIS
+  model(base = GAMPOISB(value)) |>        # fit GAMPOISB for the full hierarchy
+  reconcile(buis = bayesRecon_BUIS(base)) # reconcile with BUIS
 ```
 
-For simplicity, we only compute one-step-ahead forecasts, by changing
-the value in the parameter `h` below we can compute multi-step-ahead
+For simplicity, we only compute one-step-ahead forecasts; by changing
+the value of the parameter `h` below, we can compute multi-step-ahead
 forecasts with the same code.
 
 ``` r
