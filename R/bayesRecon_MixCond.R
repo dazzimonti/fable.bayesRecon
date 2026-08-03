@@ -18,6 +18,7 @@
 #' @param models A list of fitted models to reconcile.
 #' @param n_samples Number of samples to draw from the reconciled distribution.
 #' @param suppress_warnings If `TRUE`, suppress warnings from reconciliation.
+#' @param min_fraction_samples_ok Minimum fraction of samples that must be valid for reconciliation to succeed in TDcond(default: 0.5).
 #' 
 #' @return A model specification of class \code{"bayesRecon_MixCond"} or 
 #'   \code{"bayesRecon_TDcond"} (inheriting from \code{"mdl_lst"}) 

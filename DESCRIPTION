@@ -1,7 +1,7 @@
 Package: fable.bayesRecon
 Date: 2026-05-05
 Title: Bayesian Reconciliation in the 'fable' Framework
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     c(person(given = "Dario",
              family = "Azzimonti",
@@ -69,3 +69,4 @@ Config/testthat/edition: 3
 Depends: 
     R (>= 4.1)
 Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

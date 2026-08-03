@@ -7,7 +7,12 @@
 \usage{
 bayesRecon_MixCond(models, n_samples = 1000, suppress_warnings = TRUE)
 
-bayesRecon_TDcond(models, n_samples = 1000, suppress_warnings = TRUE)
+bayesRecon_TDcond(
+  models,
+  n_samples = 1000,
+  suppress_warnings = TRUE,
+  min_fraction_samples_ok = 0.5
+)
 }
 \arguments{
 \item{models}{A list of fitted models to reconcile.}
@@ -15,6 +20,8 @@ bayesRecon_TDcond(models, n_samples = 1000, suppress_warnings = TRUE)
 \item{n_samples}{Number of samples to draw from the reconciled distribution.}
 
 \item{suppress_warnings}{If \code{TRUE}, suppress warnings from reconciliation.}
+
+\item{min_fraction_samples_ok}{Minimum fraction of samples that must be valid for reconciliation to succeed in TDcond(default: 0.5).}
 }
 \value{
 A model specification of class \code{"bayesRecon_MixCond"} or
@@ -112,5 +119,5 @@ PMLR 244:4078-4095. \url{https://proceedings.mlr.press/v244/zambon24a.html}.
 }
 \seealso{
 \code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}},
-\code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}, \code{\link[bayesRecon:reconc_MixCond]{bayesRecon::reconc_MixCond()}}, \code{\link[bayesRecon:reconc_TDcond]{bayesRecon::reconc_TDcond()}}
+\code{\link[=bayesRecon_BUIS]{bayesRecon_BUIS()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_MixCond()}}, \code{\link[bayesRecon:Mixed_reconciliation]{bayesRecon::reconc_TDcond()}}
 }
