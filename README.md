@@ -74,7 +74,7 @@ The package follows the standard `fable` workflow:
 4.  Produce reconciled probabilistic forecasts with `forecast()`.
 
 The vignette
-[fable.bayesRecon](https://cran.r-project.org/web/packages/fable.bayesRecon/vignettes/fable.bayesRecon.html)
+[fable.bayesRecon](https://cran.r-project.org/package=fable.bayesRecon/vignettes/fable.bayesRecon.html)
 provides a simple usage example; refer to the package documentation for
 more details on the reconciliation methods and their parameters. See the
 book Hyndman and Athanasopoulos (2021) for a general introduction to
@@ -146,7 +146,8 @@ al. 2024](https://doi.org/10.1016/j.ijforecast.2023.12.004)). The
 uncertainty of the covariance matrix of the base forecasts; the
 reconciled forecasts, which are multivariate Student-t, are typically
 better calibrated (see [Carrara et
-al. 2025](https://arxiv.org/abs/2506.19554) for details).
+al. 2026](https://doi.org/10.1016/j.ijforecast.2026.07.003) for
+details).
 
 ``` r
 library(fable)
@@ -273,22 +274,22 @@ the 80%/95% quantiles of the base and reconciled forecast distributions
 
 | .model |     T |    A |    B |   AA |   AB |   BA |   BB |
 |:-------|------:|-----:|-----:|-----:|-----:|-----:|-----:|
-| base   | 16.02 | 7.56 | 8.67 | 2.92 | 4.10 | 4.90 | 5.56 |
-| buis   | 15.88 | 6.60 | 9.28 | 2.77 | 3.83 | 4.31 | 4.97 |
+| base   | 15.89 | 7.27 | 8.73 | 2.91 | 4.10 | 4.90 | 5.50 |
+| buis   | 15.72 | 6.62 | 9.10 | 2.77 | 3.85 | 4.29 | 4.81 |
 
 **80% quantile**
 
 | .model |   T |   A |   B |  AA |  AB |  BA |  BB |
 |:-------|----:|----:|----:|----:|----:|----:|----:|
-| base   |  20 |  10 |  11 |   4 |   6 |   7 |   7 |
-| buis   |  18 |   8 |  11 |   4 |   5 |   6 |   6 |
+| base   |  21 |  10 |  12 |   4 |   6 |   7 |   7 |
+| buis   |  18 |   9 |  11 |   4 |   5 |   6 |   6 |
 
 **95% quantile**
 
 | .model |   T |   A |   B |  AA |  AB |  BA |  BB |
 |:-------|----:|----:|----:|----:|----:|----:|----:|
-| base   |  25 |  14 |  15 |   6 |   8 |   9 |  10 |
-| buis   |  20 |  10 |  13 |   5 |   7 |   7 |   8 |
+| base   |  27 |  14 |  15 |   6 |   8 |   9 |  10 |
+| buis   |  21 |  11 |  13 |   6 |   7 |   7 |   8 |
 
 Finally, we compare the base and reconciled forecast distributions for
 the top series T, by evaluating the `distributional` generics
@@ -415,15 +416,15 @@ model, one column per series).
 | .model  |     T |     A |     B |
 |:--------|------:|------:|------:|
 | base    | 60.84 | 26.66 | 33.98 |
-| mixcond | 56.33 | 23.52 | 32.81 |
-| tdcond  | 60.67 | 26.67 | 34.00 |
+| mixcond | 56.05 | 23.42 | 32.63 |
+| tdcond  | 60.68 | 26.66 | 34.01 |
 
 **95% quantile**
 
 | .model  |     T |     A |     B |
 |:--------|------:|------:|------:|
 | base    | 72.58 | 36.11 | 39.59 |
-| mixcond | 63.00 | 29.00 | 37.00 |
+| mixcond | 62.00 | 28.00 | 37.00 |
 | tdcond  | 69.00 | 33.00 | 39.00 |
 
 Finally, we compare the base forecast and the two reconciled forecast
@@ -440,10 +441,10 @@ of different sizes.
 
 ## References
 
-Carrara, C., Corani, G., Azzimonti, D., Zambon, L. (2025). *Modeling the
-uncertainty on the covariance matrix for probabilistic forecast
-reconciliation*. arXiv preprint arXiv:2506.19554. [Available
-here](https://arxiv.org/abs/2506.19554)
+Carrara, C., Azzimonti, D., Corani, G., Zambon, L. (2026). *Modeling
+uncertainty in the covariance matrix for probabilistic forecast
+reconciliation*. International Journal of Forecasting. In press,
+[DOI](https://doi.org/10.1016/j.ijforecast.2026.07.003).
 
 Hyndman, R.J., & Athanasopoulos, G. (2021). *Forecasting: principles and
 practice*. 3rd edition, OTexts: Melbourne, Australia.

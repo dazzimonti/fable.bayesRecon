@@ -27,7 +27,7 @@ kable <- function(x, ...) {
 ## Introduction
 
 This vignette shows how to use the forecast reconciliation methods implemented in the `fable.bayesRecon` package.
-In particular, we will apply t-Rec method [@carrara2025] to the `swiss_tourism` dataset, which contains monthly counts of nightly stays in Switzerland, aggregated by Canton. 
+In particular, we will apply t-Rec method [@carrara2026] to the `swiss_tourism` dataset, which contains monthly counts of nightly stays in Switzerland, aggregated by Canton. 
 
 The method t-Rec is implemented by the function `bayesRecon_t()`, which can be used within the `reconcile()` function of `fabletools` to specify the reconciliation strategy.
 
@@ -68,7 +68,7 @@ data |>  head(5) |> kable()
 
 The resulting object `data`, contains time series, stacked vertically, with the time index (column `Month`),  the grouping variable (column `Canton`), and the time series values (column `Tourists`). For aggregated time series, the column `Canton` is set to `<aggregated>`.
 
-Note that `fabletools` allows more complex hierarchies with more grouping variables, however here we reproduce the hierarchy in @carrara2025.
+Note that `fabletools` allows more complex hierarchies with more grouping variables, however here we reproduce the hierarchy in @carrara2026
 
 
 

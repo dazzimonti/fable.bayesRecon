@@ -80,7 +80,7 @@ The package follows the standard `fable` workflow:
 3. Specify the reconciliation strategy inside `reconcile()`.
 4. Produce reconciled probabilistic forecasts with `forecast()`.
 
-The vignette [fable.bayesRecon](https://cran.r-project.org/web/packages/fable.bayesRecon/vignettes/fable.bayesRecon.html) provides a simple usage example; refer to the package documentation for more details on the reconciliation methods and their parameters. See the book Hyndman and Athanasopoulos (2021) for a general introduction to forecasting with `fable` and `fabletools`.
+The vignette [fable.bayesRecon](https://cran.r-project.org/package=fable.bayesRecon/vignettes/fable.bayesRecon.html) provides a simple usage example; refer to the package documentation for more details on the reconciliation methods and their parameters. See the book Hyndman and Athanasopoulos (2021) for a general introduction to forecasting with `fable` and `fabletools`.
 
 ## Getting help
 
@@ -142,7 +142,7 @@ and they are equivalent to Gaussian reconciliation via conditioning ([Zambon et 
 The `bayesRecon_t` method adopts a Bayesian approach to account for the uncertainty 
 of the covariance matrix of the base forecasts;
 the reconciled forecasts, which are multivariate Student-t, 
-are typically better calibrated (see [Carrara et al. 2025](https://arxiv.org/abs/2506.19554) for details).
+are typically better calibrated (see [Carrara et al. 2026](https://doi.org/10.1016/j.ijforecast.2026.07.003) for details).
 
 
 
@@ -702,10 +702,9 @@ ggplot() +
 
 ## References
 
-Carrara, C., Corani, G., Azzimonti, D., Zambon, L. (2025).
-*Modeling the uncertainty on the covariance matrix for probabilistic forecast reconciliation*.
-arXiv preprint arXiv:2506.19554.
-[Available here](https://arxiv.org/abs/2506.19554)
+Carrara, C., Azzimonti, D., Corani, G., Zambon, L. (2026).
+*Modeling uncertainty in the covariance matrix for probabilistic forecast reconciliation*.
+International Journal of Forecasting. In press, [DOI](https://doi.org/10.1016/j.ijforecast.2026.07.003).
 
 Hyndman, R.J., & Athanasopoulos, G. (2021).
 *Forecasting: principles and practice*. 3rd edition, OTexts: Melbourne, Australia. [OTexts.com/fpp3](https://OTexts.com/fpp3/). Accessed on 05/05/2026.

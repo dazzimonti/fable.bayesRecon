@@ -65,9 +65,10 @@ fc
 
 }
 \references{
-Carrara, C., Corani, G., Azzimonti, D., & Zambon, L. (2025). Modeling the uncertainty on the covariance
-matrix for probabilistic forecast reconciliation. arXiv preprint arXiv:2506.19554.
-\url{https://arxiv.org/abs/2506.19554}
+Carrara, C., Azzimonti, D., Corani, G., Zambon, L. (2026).
+\emph{Modeling uncertainty in the covariance matrix for probabilistic forecast reconciliation}.
+International Journal of Forecasting.
+In press, \doi{10.1016/j.ijforecast.2026.07.003}.
 }
 \seealso{
 \code{\link[fabletools:reconcile]{fabletools::reconcile()}}, \code{\link[fabletools:aggregate_key]{fabletools::aggregate_key()}},
