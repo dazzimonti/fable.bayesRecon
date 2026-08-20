@@ -1,9 +1,11 @@
 #' @rdname bayesRecon_MixCond
 #'
 #' @export
-bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE) {
-  structure(models, class = c("lst_bayesRecon_TDcond", "mdl_lst", "list"),
-            n_samples = n_samples, suppress_warnings = suppress_warnings)
+bayesRecon_TDcond <- function(models, n_samples = 1000, suppress_warnings = TRUE,
+                               min_fraction_samples_ok = 0.5) {
+  structure(models, class = c("lst_bayesRecon_TDcond", "lst_mdl", "list"),
+            n_samples = n_samples, suppress_warnings = suppress_warnings,
+            min_fraction_samples_ok = min_fraction_samples_ok)
 }
 
 #' forecast.lst_bayesRecon_TDcond
@@ -60,6 +62,7 @@ forecast.lst_bayesRecon_TDcond <- function(
   # Extract parameters from the object attributes
   n_samples <- attr(object, "n_samples")
   suppress_warnings <- attr(object, "suppress_warnings")
+  min_fraction_samples_ok <- attr(object, "min_fraction_samples_ok")
   
   # Compute upper sample covariance, drop rows containing NANs
   res_upr <- get_residuals(object, upr_ts, btm_ts, btm_idx, n_upr, "upper")
@@ -83,8 +86,8 @@ forecast.lst_bayesRecon_TDcond <- function(
       cov_upper = upr_covm,
       L_pmf = L_pmf,
       num_samples =  n_samples,
-      return_type = "samples", 
-      min_fraction_samples_ok = .5,
+      return_type = "samples",
+      min_fraction_samples_ok = min_fraction_samples_ok,
       suppress_warnings = suppress_warnings
     )
     
