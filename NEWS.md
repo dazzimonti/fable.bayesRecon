@@ -6,6 +6,8 @@
 
 * Added examples with methods from `fable.intermittent`.
 
+* Updated references to t-rec paper with DOI.
+
 # fable.bayesRecon 0.1.0
 
 * Initial CRAN submission.
