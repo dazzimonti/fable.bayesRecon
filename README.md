@@ -461,6 +461,17 @@ Proceedings of the Fortieth Conference on Uncertainty in Artificial
 Intelligence, PMLR 244:4078-4095. [Available
 here](https://proceedings.mlr.press/v244/zambon24a.html)
 
+## Acknowledgements
+
+Initial discussions and preliminary work on this package were conducted
+during research visits supported by the Swiss National Science
+Foundation (SNSF) under grant number ZSEZ0_235587 ([“Reconciliation of
+forecasts for linearly constrained time
+series”](https://data.snf.ch/grants/grant/235587)). Additional work on
+this package was supported by the SNSF under grant number 200021_212164
+([“Probabilistic Forecasting: Global Models, Gaussian Processes and
+Hierarchies”](https://data.snf.ch/grants/grant/212164)).
+
 ## Contributors
 
 <!-- prettier-ignore-start -->
