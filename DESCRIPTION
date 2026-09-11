@@ -55,7 +55,7 @@ Suggests:
     testthat (>= 3.0.0),
     cli,
     fable,
-    fable.intermittent,
+    fable.intermittent (>= 0.3.0),
     ggtime,
     tsibbledata,
     tibble,

@@ -54,7 +54,7 @@ library(fable.intermittent)
 
 
 # Mixed hierarchy with integer-valued bottom and one upper aggregate, from the `auto` dataset.
-# Forecasts with EMPDISTR for bottom base and ETS for smooth base forecasts.
+# Forecasts with EMPSD for bottom base and ETS for smooth base forecasts.
 
 
 # Helper: split a hierarchy into its upper (aggregated) and bottom (leaf) series so that a
@@ -81,14 +81,14 @@ data <- auto |>
 train <- data |> dplyr::filter(index < tsibble::yearmonth("2011 Jul"))
 
 # Base forecasts: a smooth (Gaussian) model on the continuous-looking upper aggregate, 
-# and the EMPDISTR non-parametric count model on the intermittent bottom series.
+# and the EMPSD non-parametric count model on the intermittent bottom series.
 fit_upper <- train |>
   hier_filter("upper") |>
   fabletools::model(base = fable::ETS(value))
 
 fit_bottom <- train |>
   hier_filter("bottom") |>
-  fabletools::model(base = fable.intermittent::EMPDISTR(value))
+  fabletools::model(base = fable.intermittent::EMPSD(value))
 
 fit <- dplyr::bind_rows(fit_upper, fit_bottom)
 print(fit)
