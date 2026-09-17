@@ -1,7 +1,7 @@
 Package: fable.bayesRecon
-Date: 2026-08-20
+Date: 2026-09-11
 Title: Bayesian Reconciliation in the 'fable' Framework
-Version: 0.2.0
+Version: 0.2.1
 Authors@R:
     c(person(given = "Dario",
              family = "Azzimonti",

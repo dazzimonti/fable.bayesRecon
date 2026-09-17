@@ -1,3 +1,7 @@
+# fable.bayesRecon 0.2.1
+
+* Updated dependency from `fable.intermittent`. 
+
 # fable.bayesRecon 0.2.0
 
 * Added the number of samples argument in the top-down conditioning.
