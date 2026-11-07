@@ -28,7 +28,7 @@
 #'   containing reconciled probabilistic forecasts represented as
 #'   sample distributions (\code{\link[distributional]{dist_sample}}).
 #' 
-#' @examples
+#' @examplesIf requireNamespace("fable.intermittent", quietly = TRUE) && requireNamespace("fable", quietly = TRUE)
 #' library(tsibble)
 #' library(dplyr)
 #' library(fable)

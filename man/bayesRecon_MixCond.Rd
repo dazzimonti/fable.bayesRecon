@@ -46,6 +46,7 @@ Reconciliation is performed when \code{forecast()} is called on the resulting mo
 Marginal reconciled forecasts follow a sample distribution.
 }
 \examples{
+\dontshow{if (requireNamespace("fable.intermittent", quietly = TRUE) && requireNamespace("fable", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 library(tsibble)
 library(dplyr)
 library(fable)
@@ -109,7 +110,7 @@ if (requireNamespace("ggtime", quietly = TRUE)) {
  library(ggtime)
  fc |> ggtime::autoplot(data, level=c(95))
 }
-
+\dontshow{\}) # examplesIf}
 }
 \references{
 Zambon, L., Azzimonti, D., Rubattu, N., Corani, G. (2024).
